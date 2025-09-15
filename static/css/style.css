@@ -1,0 +1,170 @@
+/* /static/css/style.css */
+
+/* Remove a margem padrão do body para a nav colar no topo */
+body {
+    background-color: #f8f9fa; /* Um cinza bem claro para o fundo */
+}
+
+/* Container principal da lista */
+.worker-list {
+    font-size: 0.9rem;
+}
+
+/* Estilo do cabeçalho da lista */
+.worker-list-header {
+    display: flex;
+    font-weight: 600;
+    color: #6c757d;
+    padding: 0.75rem 1.5rem;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* Estilo de cada item/linha/card da lista */
+.worker-item {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem 1.5rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.worker-item:hover {
+    border-color: #dc3545;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+/* Definindo a largura de cada "coluna" */
+.worker-name-col   { flex: 1; display: flex; align-items: center; gap: 1rem; }
+.worker-serial-col { width: 15%; }
+.worker-status-col { width: 15%; }
+.worker-actions-col{ width: 15%; text-align: right; }
+
+/* Estilo da imagem do trabalhador */
+.worker-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Estilo para o badge de status */
+.status-badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.status-online { background-color: #d1e7dd; color: #0f5132; }
+.status-offline { background-color: #e2e3e5; color: #41464b; }
+.status-alerta { background-color: #f8d7da; color: #842029; }
+
+
+/* --- INÍCIO: ESTILOS FINAIS DA SIDEBAR (BRANCA E COM BLUR) --- */
+
+#sidebar-wrapper {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background-color: #ffffff; /* FUNDO BRANCO */
+    box-shadow: 0 0 25px rgba(0,0,0,0.1); /* Sombra suave para dar profundidade */
+    
+    transform: translateX(-100%); 
+    transition: transform 0.15s ease-in-out; 
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    transform: translateX(0);
+}
+
+/* Cabeçalho "SafeVest" e botão de fechar */
+#sidebar-wrapper .sidebar-heading {
+    border-bottom: 1px solid #e9ecef; /* Linha divisória bem sutil */
+    color: #212529 !important; /* Texto escuro */
+}
+#sidebar-wrapper .sidebar-heading #sidebar-close {
+    color: #6c757d; /* Cor cinza para o 'X' */
+    transition: transform 0.4s ease-in-out;
+}
+#sidebar-wrapper .sidebar-heading #sidebar-close:hover {
+    transform: rotate(90deg); /* Efeito de rotação no hover */
+    color: #dc3545; /* Vermelho no hover */
+}
+
+
+/* Links do menu */
+#sidebar-wrapper .list-group-item {
+    border: none;
+    border-left: 4px solid transparent;
+    background-color: transparent;
+    color: #495057; /* Texto escuro para contraste com o branco */
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.4s ease-in-out;
+}
+
+/* Hover dos links */
+#sidebar-wrapper .list-group-item:hover {
+    border-left-color: #dc3545;
+    background-color: #f8f9fa; /* Fundo cinza bem claro */
+    color: #212529; /* Texto fica mais escuro */
+}
+
+/* Link ativo */
+#sidebar-wrapper .list-group-item.active {
+    border-left-color: #dc3545;
+    background-color: #f8f9fa;
+    color: #dc3545; /* Texto fica vermelho */
+    font-weight: 600;
+}
+
+#sidebar-wrapper .list-group-item i {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+/* O fundo escurecido e DESFOCADO */
+#wrapper::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.2); /* Fundo branco semi-transparente */
+    z-index: 999;
+    
+    /* A MÁGICA DO DESFOQUE */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px); /* Para compatibilidade com Safari */
+    
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+}
+
+#wrapper.toggled::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* O conteúdo principal da página (sem alterações na lógica) */
+#page-content-wrapper {
+    width: 100%;
+}
+
+/* --- FIM: ESTILOS FINAIS DA SIDEBAR --- */
