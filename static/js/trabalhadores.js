@@ -1,12 +1,5 @@
 // /static/js/trabalhadores.js
 
-/**
- * @fileoverview Este arquivo é o MÓDULO DE DADOS principal para os trabalhadores.
- * Ele contém os dados (atualmente mockados), a lógica de negócio (cálculo de status)
- * e as FUNÇÕES DE RENDERIZAÇÃO para diferentes visualizações (cards e tabela).
- */
-
-// --- DADOS ---
 const workersData = [
     { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', imageUrl: 'https://i.pravatar.cc/150?img=1', heartRate: 78, oxygen: 99, role: 'Operador' },
     { id: 2, serial: 'SV-1002', name: 'Marina Silva',  imageUrl: 'https://i.pravatar.cc/150?img=5', heartRate: 95, oxygen: 98, role: 'Supervisor' },
@@ -16,21 +9,12 @@ const workersData = [
     { id: 6, serial: 'SV-1006', name: 'Bruno Araújo',  imageUrl: 'https://i.pravatar.cc/150?img=6', heartRate: 65, oxygen: 88, role: 'Supervisor' },
 ];
 
-// --- LÓGICA DE NEGÓCIO ---
 function calcularStatus(worker) {
     if (worker.heartRate > 160 || worker.heartRate < 50 || worker.oxygen < 90) return 'Emergência';
     if (worker.heartRate > 120 || worker.heartRate < 60 || worker.oxygen < 95) return 'Alerta';
     return 'Seguro';
 }
 
-
-// --- RENDERIZADORES ---
-
-/**
- * Renderiza os dados dos trabalhadores em formato de CARDS.
- * @param {Array<object>} workers - A lista de trabalhadores a ser exibida.
- * @param {string} containerId - O ID do elemento HTML onde os cards serão inseridos.
- */
 function renderWorkersAsCards(workers, containerId) {
     const container = document.querySelector(containerId);
     if (!container) return;
@@ -49,9 +33,7 @@ function renderWorkersAsCards(workers, containerId) {
         if (statusAtual === 'Emergência') statusClass = 'status-emergencia';
 
         const cardWrapper = document.createElement('div');
-        // Classes do grid responsivo do Bootstrap
         cardWrapper.className = 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-4';
-
         cardWrapper.innerHTML = `
             <div class="worker-card" data-worker-id="${worker.id}">
                 <div class="status-dot ${statusClass}" title="Status: ${statusAtual}"></div>
@@ -64,22 +46,14 @@ function renderWorkersAsCards(workers, containerId) {
         cardWrapper.querySelector('.worker-card').addEventListener('click', () => {
             window.location.href = `/detalhes.html?id=${worker.id}`;
         });
-
         container.appendChild(cardWrapper);
     });
 }
 
-
-/**
- * Renderiza os dados dos trabalhadores em formato de TABELA.
- * @param {Array<object>} workers - A lista de trabalhadores a ser exibida.
- * @param {string} containerId - O ID do elemento <tbody> da tabela.
- */
 function renderWorkersAsTable(workers, containerId) {
     const tableBody = document.querySelector(containerId);
     if (!tableBody) return;
     const feedbackMessage = document.querySelector('#feedback-message');
-
     tableBody.innerHTML = '';
     
     if (workers.length === 0) {
@@ -93,14 +67,13 @@ function renderWorkersAsTable(workers, containerId) {
     workers.forEach(worker => {
         const statusAtual = calcularStatus(worker);
         let statusClass = '';
-        if (statusAtual === 'Seguro') statusClass = 'text-bg-success';
-        if (statusAtual === 'Alerta') statusClass = 'text-bg-warning';
-        if (statusAtual === 'Emergência') statusClass = 'text-bg-danger';
+        if (statusAtual === 'Seguro') statusClass = 'status-indicator-seguro';
+        if (statusAtual === 'Alerta') statusClass = 'status-indicator-alerta';
+        if (statusAtual === 'Emergência') statusClass = 'status-indicator-emergencia';
         
         const row = document.createElement('tr');
         row.style.cursor = 'pointer';
         row.dataset.workerId = worker.id;
-        
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
@@ -112,18 +85,21 @@ function renderWorkersAsTable(workers, containerId) {
                 </div>
             </td>
             <td>${worker.serial}</td>
-            <td><span class="badge ${statusClass}">${statusAtual}</span></td>
+            <td>
+                <div class="status-indicator ${statusClass}">
+                    <span class="status-indicator-dot"></span>
+                    <span>${statusAtual}</span>
+                </div>
+            </td>
             <td>
                 <button class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-eye"></i> Detalhes
                 </button>
             </td>
         `;
-        
         row.addEventListener('click', () => {
             window.location.href = `/detalhes.html?id=${worker.id}`;
         });
-        
         tableBody.appendChild(row);
     });
 }

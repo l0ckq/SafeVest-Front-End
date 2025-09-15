@@ -1,22 +1,32 @@
-// js/search.js
+// /static/js/search.js
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.querySelector('#searchInput');
+    if (!searchInput) return; // Se a página não tem busca, não faz nada
 
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function() {
-            const searchTerm = searchInput.value.toLowerCase();
+    // Identifica qual visualização a página atual está usando
+    const isCardsView = document.querySelector('#worker-cards-container');
+    const isTableView = document.querySelector('#workers-table-body');
 
-            // 1. Filtra o ARRAY de dados original
-            const filteredWorkers = workersData.filter(worker => {
-                const name = worker.name.toLowerCase();
-                const serial = worker.serial.toLowerCase();
-                return name.includes(searchTerm) || serial.includes(searchTerm);
-            });
+    // A função principal que executa a busca
+    function performSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
 
-            // 2. Pede para a função de renderização "desenhar" a tabela novamente
-            // mas desta vez, apenas com os dados filtrados.
-            renderWorkers(filteredWorkers);
+        // Filtra a lista de dados principal (que vem do trabalhadores.js)
+        const filteredWorkers = workersData.filter(worker => {
+            const name = worker.name.toLowerCase();
+            const serial = worker.serial.toLowerCase();
+            return name.includes(searchTerm) || serial.includes(searchTerm);
         });
+
+        // Chama a função de renderização correta com os dados filtrados
+        if (isCardsView) {
+            renderWorkersAsCards(filteredWorkers, '#worker-cards-container');
+        } else if (isTableView) {
+            renderWorkersAsTable(filteredWorkers, '#workers-table-body');
+        }
     }
+
+    // "Ouve" cada tecla que o usuário digita no campo de busca
+    searchInput.addEventListener('keyup', performSearch);
 });

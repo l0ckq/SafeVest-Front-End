@@ -1,12 +1,79 @@
-/* /static/css/style.css */
+/* /static/css/style.css (Versão Completa) */
 
-/* Remove a margem padrão do body para a nav colar no topo */
 body {
-    background-color: #f8f9fa; /* Um cinza bem claro para o fundo */
+    background-color: #f8f9fa;
 }
 
-/* --- INÍCIO: ESTILOS FINAIS DA SIDEBAR (BRANCA E COM BLUR) --- */
+/* --- ESTILOS DOS CARDS (para o index.html) --- */
+.worker-card {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    height: 100%; /* Garante que os cards na mesma linha tenham a mesma altura */
+}
+.worker-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    border-color: #6c757d;
+}
+.worker-card-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 0.75rem auto;
+    border: 3px solid #f8f9fa;
+}
+.worker-card-name {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+.worker-card-serial {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-family: monospace;
+}
+.status-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    border: 2px solid #ffffff;
+}
+.status-seguro { background-color: #198754; }
+.status-alerta { background-color: #ffc107; }
+.status-emergencia { background-color: #dc3545; }
 
+
+/* --- ESTILOS DA TABELA (para o trabalhadores.html) --- */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+.status-indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.status-indicator-seguro { color: #198754; }
+.status-indicator-alerta { color: #ffc107; }
+.status-indicator-emergencia { color: #dc3545; }
+.status-indicator-seguro .status-indicator-dot { background-color: #198754; }
+.status-indicator-alerta .status-indicator-dot { background-color: #ffc107; }
+.status-indicator-emergencia .status-indicator-dot { background-color: #dc3545; }
+
+
+/* --- ESTILOS DA SIDEBAR (Geral) --- */
 #sidebar-wrapper {
     width: 260px;
     height: 100vh;
@@ -14,64 +81,50 @@ body {
     top: 0;
     left: 0;
     z-index: 1000;
-    background-color: #ffffff; /* FUNDO BRANCO */
-    box-shadow: 0 0 25px rgba(0,0,0,0.1); /* Sombra suave para dar profundidade */
-    
+    background-color: #ffffff;
+    box-shadow: 0 0 25px rgba(0,0,0,0.1);
     transform: translateX(-100%); 
     transition: transform 0.2s ease-in-out; 
 }
-
 #wrapper.toggled #sidebar-wrapper {
     transform: translateX(0);
 }
-
-/* Cabeçalho "SafeVest" e botão de fechar */
 #sidebar-wrapper .sidebar-heading {
-    border-bottom: 1px solid #e9ecef; /* Linha divisória bem sutil */
-    color: #212529 !important; /* Texto escuro */
+    border-bottom: 1px solid #e9ecef;
+    color: #212529 !important;
 }
 #sidebar-wrapper .sidebar-heading #sidebar-close {
-    color: #6c757d; /* Cor cinza para o 'X' */
+    color: #6c757d;
     transition: transform 0.4s ease-in-out;
 }
 #sidebar-wrapper .sidebar-heading #sidebar-close:hover {
-    transform: rotate(90deg); /* Efeito de rotação no hover */
-    color: #dc3545; /* Vermelho no hover */
+    transform: rotate(90deg);
+    color: #dc3545;
 }
-
-
-/* Links do menu */
 #sidebar-wrapper .list-group-item {
     border: none;
     border-left: 4px solid transparent;
     background-color: transparent;
-    color: #495057; /* Texto escuro para contraste com o branco */
+    color: #495057;
     font-weight: 500;
     font-size: 0.95rem;
     transition: all 0.4s ease-in-out;
 }
-
-/* Hover dos links */
 #sidebar-wrapper .list-group-item:hover {
     border-left-color: #dc3545;
-    background-color: #f8f9fa; /* Fundo cinza bem claro */
-    color: #212529; /* Texto fica mais escuro */
+    background-color: #f8f9fa;
+    color: #212529;
 }
-
-/* Link ativo */
 #sidebar-wrapper .list-group-item.active {
     border-left-color: #dc3545;
     background-color: #f8f9fa;
-    color: #dc3545; /* Texto fica vermelho */
+    color: #dc3545;
     font-weight: 600;
 }
-
 #sidebar-wrapper .list-group-item i {
     font-size: 1.1rem;
     vertical-align: middle;
 }
-
-/* O fundo escurecido e DESFOCADO */
 #wrapper::before {
     content: '';
     position: fixed;
@@ -79,26 +132,18 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.2); /* Fundo branco semi-transparente */
+    background-color: rgba(255, 255, 255, 0.2);
     z-index: 999;
-    
-    /* A MÁGICA DO DESFOQUE */
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px); /* Para compatibilidade com Safari */
-    
+    -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
 }
-
 #wrapper.toggled::before {
     opacity: 1;
     visibility: visible;
 }
-
-/* O conteúdo principal da página (sem alterações na lógica) */
 #page-content-wrapper {
     width: 100%;
 }
-
-/* --- FIM: ESTILOS FINAIS DA SIDEBAR --- */
