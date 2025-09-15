@@ -1,71 +1,86 @@
-// js/workers.js
+// /static/js/trabalhadores.js
 
-// 1. DADOS (iguais aos de antes)
+// --- PASSO 1: A ESTRUTURA DOS DADOS MUDA ---
+// Agora, em vez de 'status', temos os dados brutos que viriam dos sensores.
 const workersData = [
-    { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', status: 'Online',  imageUrl: 'https://i.pravatar.cc/150?img=1' },
-    { id: 2, serial: 'SV-1002', name: 'Marina Silva',  status: 'Online',  imageUrl: 'https://i.pravatar.cc/150?img=5' }, // Imagem trocada para variedade
-    { id: 3, serial: 'SV-1003', name: 'Lucas Alves',   status: 'Offline', imageUrl: 'https://i.pravatar.cc/150?img=3' },
-    { id: 4, serial: 'SV-1004', name: 'Fernanda Dias', status: 'Alerta',  imageUrl: 'https://i.pravatar.cc/150?img=4' },
-    { id: 5, serial: 'SV-1005', name: 'Patrícia Souza',status: 'Online',  imageUrl: 'https://i.pravatar.cc/150?img=8' }, // Imagem trocada
-    { id: 6, serial: 'SV-1006', name: 'Bruno Araújo',  status: 'Online',  imageUrl: 'https://i.pravatar.cc/150?img=6' },
+    { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', imageUrl: 'https://i.pravatar.cc/150?img=1', heartRate: 78, oxygen: 99 },
+    { id: 2, serial: 'SV-1002', name: 'Marina Silva',  imageUrl: 'https://i.pravatar.cc/150?img=5', heartRate: 95, oxygen: 98 },
+    { id: 3, serial: 'SV-1003', name: 'Lucas Alves',   imageUrl: 'https://i.pravatar.cc/150?img=3', heartRate: 125, oxygen: 96 }, // Frequência um pouco alta -> Alerta
+    { id: 4, serial: 'SV-1004', name: 'Fernanda Dias', imageUrl: 'https://i.pravatar.cc/150?img=4', heartRate: 165, oxygen: 91 }, // Frequência muito alta -> Emergência
+    { id: 5, serial: 'SV-1005', name: 'Patrícia Souza',imageUrl: 'https://i.pravatar.cc/150?img=8', heartRate: 82, oxygen: 94 }, // Oxigênio um pouco baixo -> Alerta
+    { id: 6, serial: 'SV-1006', name: 'Bruno Araújo',  imageUrl: 'https://i.pravatar.cc/150?img=6', heartRate: 65, oxygen: 88 }, // Oxigênio muito baixo -> Emergência
 ];
 
-// 2. O CONSTRUTOR DE CARDS (VERSÃO CORRIGIDA)
-function renderWorkers(workers) {
-    const listBody = document.querySelector('#workersListBody');
-    const feedbackMessage = document.querySelector('#feedbackMessage');
+// --- PASSO 2: A "INTELIGÊNCIA" - A FUNÇÃO DE REGRAS ---
+// Esta função recebe os dados de um trabalhador e retorna o status calculado.
+function calcularStatus(worker) {
+    // Regras de Emergência (têm prioridade máxima)
+    if (worker.heartRate > 160 || worker.heartRate < 50 || worker.oxygen < 90) {
+        return 'Emergência';
+    }
+    // Regras de Alerta
+    if (worker.heartRate > 120 || worker.heartRate < 60 || worker.oxygen < 95) {
+        return 'Alerta';
+    }
+    // Se nenhuma das condições acima for atendida, o status é Seguro.
+    return 'Seguro';
+}
 
-    if (!listBody || !feedbackMessage) {
-        console.error("Elemento da lista ou de feedback não encontrado!");
+
+// --- PASSO 3: A RENDERIZAÇÃO USA A INTELIGÊNCIA ---
+// Esta função não muda muito, apenas como ela OBTÉM o status.
+function renderWorkers(workersToRender) {
+    const container = document.querySelector('#worker-list-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    
+    if (workersToRender.length === 0) {
+        container.innerHTML = `<div class="alert alert-secondary mt-2 text-center">Nenhum trabalhador encontrado.</div>`;
         return;
     }
 
-    // Limpa a lista antes de recriar
-    listBody.innerHTML = '';
+    workersToRender.forEach(worker => {
+        // AQUI ESTÁ A MUDANÇA: Calculamos o status em vez de apenas lê-lo.
+        const statusAtual = calcularStatus(worker);
 
-    if (workers.length === 0) {
-        feedbackMessage.style.display = 'block';
-        listBody.style.display = 'none'; // Esconde o corpo da lista
-    } else {
-        feedbackMessage.style.display = 'none';
-        listBody.style.display = 'block'; // Garante que o corpo da lista esteja visível
+        let statusClass = '';
+        if (statusAtual === 'Seguro') statusClass = 'status-seguro';
+        if (statusAtual === 'Alerta') statusClass = 'status-alerta';
+        if (statusAtual === 'Emergência') statusClass = 'status-emergencia';
 
-        // Transforma cada objeto 'worker' em uma string de HTML
-        const workersHtml = workers.map(worker => {
-            let statusClass = '';
-            if (worker.status === 'Online')  statusClass = 'status-online';
-            if (worker.status === 'Offline') statusClass = 'status-offline';
-            if (worker.status === 'Alerta')  statusClass = 'status-alerta';
+        const card = document.createElement('div');
+        card.className = 'worker-card';
+        card.dataset.workerId = worker.id;
 
-            // Retorna a string HTML para este trabalhador específico
-            return `
-                <div class="worker-item">
-                    <div class="worker-name-col">
-                        <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="worker-avatar">
-                        <span>${worker.name}</span>
-                    </div>
-                    <div class="worker-serial-col">${worker.serial}</div>
-                    <div class="worker-status-col">
-                        <span class="status-badge ${statusClass}">${worker.status}</span>
-                    </div>
-                    <div class="worker-actions-col">
-                        <button class="btn btn-sm btn-outline-secondary" title="Ver detalhes de ${worker.name}">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join(''); // Junta todas as strings em uma só
+        card.innerHTML = `
+            <div class="status-dot ${statusClass}" title="Status: ${statusAtual}"></div>
+            <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="worker-card-avatar">
+            <div class="worker-card-name">${worker.name}</div>
+            <div class="worker-card-serial">${worker.serial}</div>
+        `;
 
-        // Insere a string gigante de HTML no corpo da lista de uma vez
-        listBody.innerHTML = workersHtml;
-    }
+        card.addEventListener('click', () => {
+            window.location.href = `/detalhes.html?id=${worker.id}`;
+        });
+
+        container.appendChild(card);
+    });
 }
 
-// 3. EVENTO INICIAL (sem alterações)
+// --- PASSO 4: PREPARANDO PARA O FUTURO ---
+// A estrutura para carregar os dados do servidor.
 document.addEventListener('DOMContentLoaded', () => {
-    // Adiciona um pequeno atraso para garantir que tudo carregou, só por segurança
-    setTimeout(() => {
-        renderWorkers(workersData);
-    }, 100);
+    // QUANDO O BACKEND ESTIVER PRONTO, VOCÊ VAI DESCOMENTAR O CÓDIGO ABAIXO
+    /*
+    fetch('/api/trabalhadores') // Endereço da sua API Django
+        .then(response => response.json())
+        .then(dadosDoServidor => {
+            renderWorkers(dadosDoServidor); // Usa os dados reais
+        })
+        .catch(error => console.error('Falha ao buscar dados:', error));
+    */
+
+    // POR ENQUANTO, continuamos usando nossos dados "fake"
+    renderWorkers(workersData);
 });
