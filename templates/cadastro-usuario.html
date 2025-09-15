@@ -8,8 +8,54 @@
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <link rel="stylesheet" href="/static/css/form_styles.css">
         <title>SafeVest - Cadastrar</title>
+        <style>
+        body {
+            /* A fonte padrão do Bootstrap será usada no corpo */
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+        }
+        .login-container {
+            width: 900px;
+            height: 550px;
+            display: flex;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-section {
+            flex: 1;
+            padding: 2rem;
+            background: white;
+            overflow-y: auto;
+        }
+        .gradient-section {
+            flex: 1;
+            background: linear-gradient(135deg, #be0303, #780000);
+            /* A fonte Montserrat será aplicada apenas aqui */
+            font-family: 'Montserrat', sans-serif;
+        }
+        .logo-pequena {
+            max-width: 150px;
+            max-height: 100px;
+        }
+        .icone-branco {
+            filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(344deg) brightness(100%) contrast(100%);
+        }
+        @media (max-width: 768px) {
+            .login-container {
+                width: 100%;
+                height: auto;
+                flex-direction: column;
+            }
+            .gradient-section {
+                display: none;
+            }
+        }
+        </style>
     </head>
     <body>
         <div class="login-container">
