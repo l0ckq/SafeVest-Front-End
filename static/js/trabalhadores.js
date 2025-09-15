@@ -50,6 +50,8 @@ function renderWorkersAsCards(workers, containerId) {
     });
 }
 
+// /static/js/trabalhadores.js
+
 function renderWorkersAsTable(workers, containerId) {
     const tableBody = document.querySelector(containerId);
     if (!tableBody) return;
@@ -72,10 +74,11 @@ function renderWorkersAsTable(workers, containerId) {
         if (statusAtual === 'Emergência') statusClass = 'status-indicator-emergencia';
         
         const row = document.createElement('tr');
-        row.style.cursor = 'pointer';
         row.dataset.workerId = worker.id;
+        
+        // --- MUDANÇA PRINCIPAL AQUI ---
         row.innerHTML = `
-            <td>
+            <td class="clickable-row">
                 <div class="d-flex align-items-center">
                     <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
                     <div>
@@ -84,22 +87,51 @@ function renderWorkersAsTable(workers, containerId) {
                     </div>
                 </div>
             </td>
-            <td>${worker.serial}</td>
-            <td>
+            <td class="clickable-row">${worker.serial}</td>
+            <td class="clickable-row">
                 <div class="status-indicator ${statusClass}">
                     <span class="status-indicator-dot"></span>
                     <span>${statusAtual}</span>
                 </div>
             </td>
             <td>
-                <button class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-eye"></i> Detalhes
-                </button>
+                <div class="action-buttons">
+                    <button class="btn btn-icon btn-edit" title="Editar ${worker.name}">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-icon btn-delete" title="Excluir ${worker.name}">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
             </td>
         `;
+        
+        // Adiciona o evento de clique para a LINHA INTEIRA
         row.addEventListener('click', () => {
             window.location.href = `/detalhes.html?id=${worker.id}`;
         });
+
+        // Seleciona os botões que acabamos de criar DENTRO da linha
+        const editButton = row.querySelector('.btn-edit');
+        const deleteButton = row.querySelector('.btn-delete');
+
+        // Adiciona o evento de clique para o BOTÃO DE EDITAR
+        editButton.addEventListener('click', (event) => {
+            // ESSA LINHA É A MÁGICA: Impede que o clique no botão ative o clique na linha inteira.
+            event.stopPropagation(); 
+            console.log(`Clicou em EDITAR o trabalhador com ID: ${worker.id}`);
+            // No futuro, levará para a página de edição
+            // window.location.href = `/editar.html?id=${worker.id}`;
+        });
+
+        // Adiciona o evento de clique para o BOTÃO DE EXCLUIR
+        deleteButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Impede o clique de "vazar" para a linha
+            console.log(`Clicou em EXCLUIR o trabalhador com ID: ${worker.id}`);
+            // No futuro, levará para a página de confirmação de exclusão
+            // window.location.href = `/excluir.html?id=${worker.id}`;
+        });
+        
         tableBody.appendChild(row);
     });
 }

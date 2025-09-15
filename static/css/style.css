@@ -147,3 +147,33 @@ body {
 #page-content-wrapper {
     width: 100%;
 }
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem; /* Espaçamento entre os botões */
+}
+
+/* Estilo base para os botões de ícone */
+.btn-icon {
+    /* Força o Bootstrap a não ter cor de fundo ou borda por padrão */
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-border-color: transparent;
+
+    color: #6c757d; /* Cor cinza sutil para o ícone */
+    transition: all 0.2s ease-in-out;
+}
+
+/* Efeito de hover para o botão de EDITAR */
+.btn-icon.btn-edit:hover {
+    --bs-btn-hover-bg: #e9ecef; /* Fundo cinza claro ao passar o mouse */
+    color: #212529; /* Ícone fica preto */
+    transform: scale(1.1); /* Aumenta um pouquinho o ícone */
+}
+
+/* Efeito de hover para o botão de EXCLUIR */
+.btn-icon.btn-delete:hover {
+    --bs-btn-hover-bg: #f8d7da; /* Fundo vermelho claro ao passar o mouse */
+    color: #dc3545; /* Ícone fica vermelho */
+    transform: scale(1.1);
+}
