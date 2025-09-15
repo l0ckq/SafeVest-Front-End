@@ -1,86 +1,129 @@
 // /static/js/trabalhadores.js
 
-// --- PASSO 1: A ESTRUTURA DOS DADOS MUDA ---
-// Agora, em vez de 'status', temos os dados brutos que viriam dos sensores.
+/**
+ * @fileoverview Este arquivo é o MÓDULO DE DADOS principal para os trabalhadores.
+ * Ele contém os dados (atualmente mockados), a lógica de negócio (cálculo de status)
+ * e as FUNÇÕES DE RENDERIZAÇÃO para diferentes visualizações (cards e tabela).
+ */
+
+// --- DADOS ---
 const workersData = [
-    { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', imageUrl: 'https://i.pravatar.cc/150?img=1', heartRate: 78, oxygen: 99 },
-    { id: 2, serial: 'SV-1002', name: 'Marina Silva',  imageUrl: 'https://i.pravatar.cc/150?img=5', heartRate: 95, oxygen: 98 },
-    { id: 3, serial: 'SV-1003', name: 'Lucas Alves',   imageUrl: 'https://i.pravatar.cc/150?img=3', heartRate: 125, oxygen: 96 }, // Frequência um pouco alta -> Alerta
-    { id: 4, serial: 'SV-1004', name: 'Fernanda Dias', imageUrl: 'https://i.pravatar.cc/150?img=4', heartRate: 165, oxygen: 91 }, // Frequência muito alta -> Emergência
-    { id: 5, serial: 'SV-1005', name: 'Patrícia Souza',imageUrl: 'https://i.pravatar.cc/150?img=8', heartRate: 82, oxygen: 94 }, // Oxigênio um pouco baixo -> Alerta
-    { id: 6, serial: 'SV-1006', name: 'Bruno Araújo',  imageUrl: 'https://i.pravatar.cc/150?img=6', heartRate: 65, oxygen: 88 }, // Oxigênio muito baixo -> Emergência
+    { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', imageUrl: 'https://i.pravatar.cc/150?img=1', heartRate: 78, oxygen: 99, role: 'Operador' },
+    { id: 2, serial: 'SV-1002', name: 'Marina Silva',  imageUrl: 'https://i.pravatar.cc/150?img=5', heartRate: 95, oxygen: 98, role: 'Supervisor' },
+    { id: 3, serial: 'SV-1003', name: 'Lucas Alves',   imageUrl: 'https://i.pravatar.cc/150?img=3', heartRate: 125, oxygen: 96, role: 'Operador' },
+    { id: 4, serial: 'SV-1004', name: 'Fernanda Dias', imageUrl: 'https://i.pravatar.cc/150?img=4', heartRate: 165, oxygen: 91, role: 'Administrador' },
+    { id: 5, serial: 'SV-1005', name: 'Patrícia Souza',imageUrl: 'https://i.pravatar.cc/150?img=8', heartRate: 82, oxygen: 94, role: 'Operador' },
+    { id: 6, serial: 'SV-1006', name: 'Bruno Araújo',  imageUrl: 'https://i.pravatar.cc/150?img=6', heartRate: 65, oxygen: 88, role: 'Supervisor' },
 ];
 
-// --- PASSO 2: A "INTELIGÊNCIA" - A FUNÇÃO DE REGRAS ---
-// Esta função recebe os dados de um trabalhador e retorna o status calculado.
+// --- LÓGICA DE NEGÓCIO ---
 function calcularStatus(worker) {
-    // Regras de Emergência (têm prioridade máxima)
-    if (worker.heartRate > 160 || worker.heartRate < 50 || worker.oxygen < 90) {
-        return 'Emergência';
-    }
-    // Regras de Alerta
-    if (worker.heartRate > 120 || worker.heartRate < 60 || worker.oxygen < 95) {
-        return 'Alerta';
-    }
-    // Se nenhuma das condições acima for atendida, o status é Seguro.
+    if (worker.heartRate > 160 || worker.heartRate < 50 || worker.oxygen < 90) return 'Emergência';
+    if (worker.heartRate > 120 || worker.heartRate < 60 || worker.oxygen < 95) return 'Alerta';
     return 'Seguro';
 }
 
 
-// --- PASSO 3: A RENDERIZAÇÃO USA A INTELIGÊNCIA ---
-// Esta função não muda muito, apenas como ela OBTÉM o status.
-function renderWorkers(workersToRender) {
-    const container = document.querySelector('#worker-list-container');
-    if (!container) return;
+// --- RENDERIZADORES ---
 
+/**
+ * Renderiza os dados dos trabalhadores em formato de CARDS.
+ * @param {Array<object>} workers - A lista de trabalhadores a ser exibida.
+ * @param {string} containerId - O ID do elemento HTML onde os cards serão inseridos.
+ */
+function renderWorkersAsCards(workers, containerId) {
+    const container = document.querySelector(containerId);
+    if (!container) return;
     container.innerHTML = '';
     
-    if (workersToRender.length === 0) {
-        container.innerHTML = `<div class="alert alert-secondary mt-2 text-center">Nenhum trabalhador encontrado.</div>`;
+    if (workers.length === 0) {
+        container.innerHTML = `<div class="col-12"><div class="alert alert-secondary mt-2 text-center">Nenhum trabalhador encontrado.</div></div>`;
         return;
     }
 
-    workersToRender.forEach(worker => {
-        // AQUI ESTÁ A MUDANÇA: Calculamos o status em vez de apenas lê-lo.
+    workers.forEach(worker => {
         const statusAtual = calcularStatus(worker);
-
         let statusClass = '';
         if (statusAtual === 'Seguro') statusClass = 'status-seguro';
         if (statusAtual === 'Alerta') statusClass = 'status-alerta';
         if (statusAtual === 'Emergência') statusClass = 'status-emergencia';
 
-        const card = document.createElement('div');
-        card.className = 'worker-card';
-        card.dataset.workerId = worker.id;
+        const cardWrapper = document.createElement('div');
+        // Classes do grid responsivo do Bootstrap
+        cardWrapper.className = 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-4';
 
-        card.innerHTML = `
-            <div class="status-dot ${statusClass}" title="Status: ${statusAtual}"></div>
-            <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="worker-card-avatar">
-            <div class="worker-card-name">${worker.name}</div>
-            <div class="worker-card-serial">${worker.serial}</div>
+        cardWrapper.innerHTML = `
+            <div class="worker-card" data-worker-id="${worker.id}">
+                <div class="status-dot ${statusClass}" title="Status: ${statusAtual}"></div>
+                <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="worker-card-avatar">
+                <div class="worker-card-name">${worker.name}</div>
+                <div class="worker-card-serial">${worker.serial}</div>
+            </div>
         `;
-
-        card.addEventListener('click', () => {
+        
+        cardWrapper.querySelector('.worker-card').addEventListener('click', () => {
             window.location.href = `/detalhes.html?id=${worker.id}`;
         });
 
-        container.appendChild(card);
+        container.appendChild(cardWrapper);
     });
 }
 
-// --- PASSO 4: PREPARANDO PARA O FUTURO ---
-// A estrutura para carregar os dados do servidor.
-document.addEventListener('DOMContentLoaded', () => {
-    // QUANDO O BACKEND ESTIVER PRONTO, VOCÊ VAI DESCOMENTAR O CÓDIGO ABAIXO
-    /*
-    fetch('/api/trabalhadores') // Endereço da sua API Django
-        .then(response => response.json())
-        .then(dadosDoServidor => {
-            renderWorkers(dadosDoServidor); // Usa os dados reais
-        })
-        .catch(error => console.error('Falha ao buscar dados:', error));
-    */
 
-    // POR ENQUANTO, continuamos usando nossos dados "fake"
-    renderWorkers(workersData);
-});
+/**
+ * Renderiza os dados dos trabalhadores em formato de TABELA.
+ * @param {Array<object>} workers - A lista de trabalhadores a ser exibida.
+ * @param {string} containerId - O ID do elemento <tbody> da tabela.
+ */
+function renderWorkersAsTable(workers, containerId) {
+    const tableBody = document.querySelector(containerId);
+    if (!tableBody) return;
+    const feedbackMessage = document.querySelector('#feedback-message');
+
+    tableBody.innerHTML = '';
+    
+    if (workers.length === 0) {
+        tableBody.style.display = 'none';
+        if (feedbackMessage) feedbackMessage.style.display = 'block';
+    } else {
+        tableBody.style.display = '';
+        if (feedbackMessage) feedbackMessage.style.display = 'none';
+    }
+
+    workers.forEach(worker => {
+        const statusAtual = calcularStatus(worker);
+        let statusClass = '';
+        if (statusAtual === 'Seguro') statusClass = 'text-bg-success';
+        if (statusAtual === 'Alerta') statusClass = 'text-bg-warning';
+        if (statusAtual === 'Emergência') statusClass = 'text-bg-danger';
+        
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
+        row.dataset.workerId = worker.id;
+        
+        row.innerHTML = `
+            <td>
+                <div class="d-flex align-items-center">
+                    <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                    <div>
+                        <div class="fw-bold">${worker.name}</div>
+                        <div class="text-muted small">${worker.role}</div>
+                    </div>
+                </div>
+            </td>
+            <td>${worker.serial}</td>
+            <td><span class="badge ${statusClass}">${statusAtual}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye"></i> Detalhes
+                </button>
+            </td>
+        `;
+        
+        row.addEventListener('click', () => {
+            window.location.href = `/detalhes.html?id=${worker.id}`;
+        });
+        
+        tableBody.appendChild(row);
+    });
+}

@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>SafeVest - Trabalhadores</title>
+        <title>SafeVest - Dashboard</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
         <link rel="stylesheet" href="/static/css/style.css">
@@ -14,35 +14,24 @@
             <div id="page-content-wrapper">
                 <nav class="d-flex align-items-center justify-content-between bg-danger text-white p-3 shadow-sm">
                     <div class="d-flex gap-3 align-items-center">
-                        <a href="#" class="text-white fs-4" id="menu-toggle">
-                            <i class="bi bi-list"></i>
-                        </a>
-                        <span class="fs-5 fw-bold">SafeVest</span>
+                        <a href="#" class="text-white fs-4" id="menu-toggle"><i class="bi bi-list"></i></a>
+                        <span class="fs-5 fw-bold">Dashboard</span>
                     </div>
-                    <button class="btn btn-light btn-sm">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        Adicionar
-                    </button>
+                    <button class="btn btn-light btn-sm"><i class="bi bi-plus-circle me-1"></i>Adicionar</button>
                 </nav>
                 <main class="container-fluid my-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6>Trabalhadores</h6>
-                        <div class="d-flex gap-2">
-                            <input
-                                id="searchInput"
-                                class="form-control form-control-sm"
-                                style="min-width:250px"
-                                placeholder="Pesquisar por nome ou serial..."
-                            >
+                    <div id="worker-cards-container" class="row">
                         </div>
-                    </div>
-                    <div id="worker-list-container"></div>
                 </main>
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="/static/js/trabalhadores.js"></script>
-        <script src="/static/js/search.js"></script>
-        <script src="/static/js/layout.js"></script>
+        <script src="/static/js/trabalhadores.js"></script> <script src="/static/js/layout.js"></script>
+        <script>
+            // Script específico para esta página: chama a função de renderizar CARDS
+            document.addEventListener('DOMContentLoaded', () => {
+                renderWorkersAsCards(workersData, '#worker-cards-container');
+            });
+        </script>
     </body>
 </html>
