@@ -4,6 +4,7 @@
 const menuItems = [
     { href: "/index.html", icon: "bi-house", text: "Homepage" },
     { href: "/templates/trabalhadores.html", icon: "bi-people", text: "Trabalhadores" },
+    { href: "/templates/vestes.html", icon: "bi-clipboard-heart", text: "SafeVests" },
     { href: "/templates/configuracoes.html", icon: "bi-gear", text: "Configurações" },
     { href: "/templates/login.html", icon: "bi-box-arrow-left", text: "Logout" },
 ];
@@ -15,7 +16,7 @@ function buildSidebar() {
 
     const currentPagePath = window.location.pathname;
 
-    // Constrói o cabeçalho
+    // Constrói o cabeçalho/header
     const headerHTML = `
         <div class="sidebar-heading py-4 fs-4 fw-bold d-flex justify-content-between align-items-center px-3">
             <span>SafeVest</span>
