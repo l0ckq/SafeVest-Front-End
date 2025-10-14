@@ -1,5 +1,3 @@
-// /static/js/trabalhadores.js
-
 const workersData = [
     { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', imageUrl: 'https://i.pravatar.cc/150?img=1', heartRate: 78, oxygen: 99, role: 'Operador' },
     { id: 2, serial: 'SV-1002', name: 'Marina Silva',  imageUrl: 'https://i.pravatar.cc/150?img=5', heartRate: 95, oxygen: 98, role: 'Supervisor' },
@@ -44,13 +42,11 @@ function renderWorkersAsCards(workers, containerId) {
         `;
         
         cardWrapper.querySelector('.worker-card').addEventListener('click', () => {
-            window.location.href = `/detalhes.html?id=${worker.id}`;
+            window.location.href = `/detalhes.html?id=${worker.user.id}`;
         });
         container.appendChild(cardWrapper);
     });
 }
-
-// /static/js/trabalhadores.js
 
 function renderWorkersAsTable(workers, containerId) {
     const tableBody = document.querySelector(containerId);
@@ -108,7 +104,7 @@ function renderWorkersAsTable(workers, containerId) {
         
         // Adiciona o evento de clique para a LINHA INTEIRA
         row.addEventListener('click', () => {
-            window.location.href = `/detalhes.html?id=${worker.id}`;
+            window.location.href = `/detalhes.html?id=${worker.profile.user.id}`;
         });
 
         // Seleciona os botões que acabamos de criar DENTRO da linha
@@ -121,7 +117,6 @@ function renderWorkersAsTable(workers, containerId) {
             event.stopPropagation(); 
             console.log(`Clicou em EDITAR o trabalhador com ID: ${worker.id}`);
             // No futuro, levará para a página de edição
-            // window.location.href = `/editar.html?id=${worker.id}`;
         });
 
         // Adiciona o evento de clique para o BOTÃO DE EXCLUIR
@@ -129,7 +124,6 @@ function renderWorkersAsTable(workers, containerId) {
             event.stopPropagation(); // Impede o clique de "vazar" para a linha
             console.log(`Clicou em EXCLUIR o trabalhador com ID: ${worker.id}`);
             // No futuro, levará para a página de confirmação de exclusão
-            // window.location.href = `/excluir.html?id=${worker.id}`;
         });
         
         tableBody.appendChild(row);
