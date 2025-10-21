@@ -1,8 +1,6 @@
-// /static/js/search.js
-
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.querySelector('#searchInput');
-    if (!searchInput) return; // Se a página não tem busca, não faz nada
+    if (!searchInput) return;
 
     // Identifica qual visualização a página atual está usando
     const isCardsView = document.querySelector('#worker-cards-container');

@@ -1,93 +1,86 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeVest - Cadastre sua Empresa</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        body { background-color: #f8f9fa; }
-        .main-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
-        .signup-card {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 1rem 3rem rgba(0,0,0,0.1);
-        }
-        .form-section { flex-basis: 50%; padding: 2.5rem; overflow-y: auto; }
-        .branding-section {
-            flex-basis: 50%;
-            background: linear-gradient(135deg, #dc3545, #831111);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 3rem;
-            text-align: center;
-        }
-        .branding-section .bi { font-size: 5rem; }
-        @media (max-width: 768px) {
-            .branding-section { display: none; }
-            .form-section { flex-basis: 100%; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeVest - Cadastro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body{background:linear-gradient(135deg,#be0303,#780000);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;font-family:'Montserrat',sans-serif}
+    .signup-card{width:100%;max-width:1000px;border-radius:1rem;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.2);border:none;background-color:#fff;display:flex}
+    .form-section{padding:2.5rem;display:flex;flex-direction:column}
+    .form-scroll{overflow-y:auto;max-height:60vh;padding-right:.5rem}
+    .form-scroll::-webkit-scrollbar{width:6px}
+    .form-scroll::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}
+    .gradient-section{background:linear-gradient(135deg,#be0303,#780000);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:3rem;text-align:center}
+    .logo-pequena{max-width:90px;filter:invert(100%) brightness(200%)}
+    .mobile-branding{display:none;text-align:center;margin-bottom:1.5rem}
+    .mobile-branding img{max-width:70px;filter:invert(20%) sepia(85%) saturate(5500%) hue-rotate(345deg) brightness(85%) contrast(100%)}
+    @media(max-width:991.98px){.gradient-section{display:none}.mobile-branding{display:block}.form-section{padding:1.5rem}.signup-card{margin-top:1rem;margin-bottom:1rem}}
+    .input-group-text{cursor:pointer;background-color:#fff;border-left:none}
+    .btn-danger{color:#fff!important;font-weight:600}
+    h4.title{font-weight:700}
+    label.form-label{font-weight:500}
+  </style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="signup-card">
-            <div class="form-section">
-                <h2 class="text-center text-danger mb-4">Cadastre sua Empresa</h2>
-                <form id="signup-form">
-                    
-                    <h5 class="mb-3 fw-semibold">Dados da Empresa</h5>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="nome_empresa" placeholder="Nome da sua Empresa" required>
-                        <label for="nome_empresa">Nome da Empresa</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="cnpj" placeholder="CNPJ" required>
-                        <label for="cnpj">CNPJ</label>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <h5 class="mb-3 fw-semibold">Seus Dados de Administrador</h5>
-                    <p class="text-muted small mb-3">Este será o usuário principal, com poder total sobre a gestão da sua empresa no sistema.</p>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="nome_admin" placeholder="Seu Nome Completo" required>
-                        <label for="nome_admin">Seu Nome Completo</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                        <input type="email" class="form-control" id="email_admin" placeholder="seu@email.com" required>
-                        <label for="email_admin">Seu Email (será seu login)</label>
-                    </div>
-                    <div class="form-floating mb-4">
-                        <input type="password" class="form-control" id="senha_admin" placeholder="Senha" required>
-                        <label for="senha_admin">Crie uma Senha</label>
-                    </div>
-                    
-                    <div id="feedback-alert" class="alert d-none" role="alert"></div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-danger btn-lg fw-bold">Criar Conta e Cadastrar Empresa</button>
-                    </div>
-                </form>
-                <div class="text-center mt-4">
-                    <p>Já tem uma conta? <a href="/login.html">Faça o login</a></p>
-                </div>
-            </div>
-            <div class="branding-section">
-                <i class="bi bi-shield-lock-fill mb-4"></i>
-                <h1 class="fw-bold">SafeVest</h1>
-                <p class="lead">Comece agora a proteger sua equipe com a melhor tecnologia de monitoramento em tempo real.</p>
-            </div>
+  <div class="signup-card card">
+    <div class="row g-0 w-100">
+      <div class="col-lg-6 form-section bg-white">
+        <div class="mobile-branding">
+          <img src="/static/img/lock-solid-full.svg" alt="Logo SafeVest" class="img-fluid mb-2">
+          <h3 class="text-danger fw-bold mb-0">SafeVest</h3>
         </div>
-    </div>
+        <h4 class="title text-center mb-3">Cadastre sua Empresa</h4>
+        <p class="text-center text-muted small mb-4">Preencha os dados para criar sua conta</p>
 
-    <script src="/static/js/signup.js"></script>
+        <div class="form-scroll">
+          <form id="signup-form">
+            <h6 class="fw-semibold mb-2">Dados da Empresa</h6>
+            <div class="mb-3">
+              <label class="form-label">Nome da Empresa</label>
+              <input type="text" class="form-control" id="nome_empresa" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="cnpj" required>
+            </div>
+            <hr>
+            <h6 class="fw-semibold mb-2">Administrador</h6>
+            <div class="mb-3">
+              <label class="form-label">Nome Completo</label>
+              <input type="text" class="form-control" id="nome_admin" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" id="email_admin" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Senha</label>
+              <div class="input-group">
+                <input type="password" class="form-control" id="senha_admin" required>
+                <span class="input-group-text" id="togglePassword"><i class="bi bi-eye-slash"></i></span>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <button class="btn btn-danger w-100 mt-3 py-2">Criar Conta</button>
+        <p class="text-center mt-3 small">Já tem conta? <a href="/login.html" class="text-danger fw-semibold text-decoration-none">Entrar</a></p>
+      </div>
+
+      <div class="col-lg-6 gradient-section d-none d-lg-flex">
+        <img src="/static/img/lock-solid-full.svg" class="logo-pequena mb-3">
+        <h3 class="fw-bold">SafeVest</h3>
+        <p>A tecnologia que protege sua equipe com inteligência e precisão.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

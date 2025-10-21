@@ -1,5 +1,3 @@
-// /static/js/cadastro-vestes.js
-
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('#form-cadastro-vestes');
     if (!form) return;

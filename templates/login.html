@@ -10,110 +10,172 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <title>SafeVest - Login</title>
         <style>
-        body {
-            /* A fonte padrão do Bootstrap será usada no corpo */
-            display: flex;
-            min-height: 100vh;
-            align-items: center;
-            justify-content: center;
-            background-color: #f8f9fa;
-        }
-        .login-container {
-            width: 900px;
-            height: 550px;
-            display: flex;
-            overflow: hidden;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        .form-section {
-            flex: 1;
-            padding: 2rem;
-            background: white;
-            overflow-y: auto;
-        }
-        .gradient-section {
-            flex: 1;
-            background: linear-gradient(135deg, #be0303, #780000);
-            /* A fonte Montserrat será aplicada apenas aqui */
-            font-family: 'Montserrat', sans-serif;
-        }
-        .logo-pequena {
-            max-width: 150px;
-            max-width: 150px;
-        }
-        .icone-branco {
-            filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(344deg) brightness(100%) contrast(100%);
-        }
-        @media (max-width: 768px) {
-            .login-container {
-                width: 100%;
-                height: auto;
-                flex-direction: column;
-            }
-            .gradient-section {
-                display: none;
-            }
-        }
+      body {
+        background: linear-gradient(135deg, #be0303, #780000);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        font-family: 'Montserrat', sans-serif;
+      }
+      .login-card {
+        width: 100%;
+        max-width: 900px;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        border: none;
+        background-color: #fff;
+      }
+      .form-section {
+        padding: 3rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .gradient-section {
+        background: linear-gradient(135deg, #be0303, #780000);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 3rem;
+        text-align: center;
+      }
+      .logo-pequena { max-width: 120px; }
+      .icone-branco { filter: invert(100%) brightness(200%); }
+      .mobile-branding {
+        display: none;
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      .mobile-branding img {
+        max-width: 80px;
+        filter: invert(20%) sepia(85%) saturate(5500%) hue-rotate(345deg) brightness(85%) contrast(100%);
+      }
+      @media (max-width: 991.98px) {
+        .gradient-section { display: none; }
+        .mobile-branding { display: block; }
+        .form-section { padding: 2rem; }
+        .login-card { margin-top: 1rem; margin-bottom: 1rem; }
+      }
+      .input-group .form-control {
+        border-top-right-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+      }
+      .input-group-text {
+        cursor: pointer;
+        background-color: #fff;
+        border-left: none;
+      }
+      .loading {
+        width: 32px;
+        height: 24px;
+        display: inline-block;
+      }
+      .loading svg { display: block; width: 100%; height: 100%; }
+      .loading svg polyline {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .loading svg polyline#back { stroke: #f8d7da; }
+      .loading svg polyline#front {
+        stroke: #dc3545;
+        stroke-dasharray: 48, 144;
+        stroke-dashoffset: 192;
+        animation: dash_682 1.4s linear infinite;
+      }
+      @keyframes dash_682 {
+        72.5% { opacity: 0; }
+        to { stroke-dashoffset: 0; }
+      }
+      .spinner-hidden { display: none; }
+      .spinner-visible { display: inline-block; }
         </style>
     </head>
     <body>
-        <div class="login-container">
-            <div class="form-section">
-                <div style="max-width: 400px; margin: 0 auto;">
-                    <h2 class="text-danger mb-4 text-center">Login de Usuário</h2>
-                    <form id="formulario">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="username"
-                                name="username"
-                                placeholder="Digite o username cadastrado"
-                                required
-                            >
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
+        <div class="login-card card">
+            <div class="row g-0">
+                <div class="col-lg-6 form-section bg-white">
+                    <div class="mobile-branding">
+                        <img src="/static/img/lock-solid-full.svg" alt="Logo SafeVest" class="img-fluid mb-2">
+                        <h3 class="text-danger fw-bold">SafeVest</h3>
+                    </div>
+                    <h4 class="text-center mb-4">Acesse sua Conta</h4>
+                    <form id="login-form">
+                        <div class="form-floating mb-3">
                             <input
                                 type="email"
                                 class="form-control"
-                                id="email"
-                                name="email"
+                                id="username"
+                                name="username"
                                 placeholder="Digite seu email"
                                 required
                             >
+                            <label for="username">Email (Login)</label>
                         </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Senha</label>
-                            <input
-                                type="password"
-                                class="form-control"
-                                id="password"
-                                name="password"
-                                placeholder="Digite sua senha"
-                                required
-                            >
+                        <div class="mb-3 position-relative">
+                            <div class="input-group">
+                                <div class="form-floating flex-grow-1">
+                                    <input
+                                        type="password"
+                                        class="form-control"
+                                        id="password"
+                                        name="password"
+                                        placeholder="Digite sua senha"
+                                        required
+                                    >
+                                    <label for="password">Senha</label>
+                                </div>
+                                <span class="input-group-text" id="togglePassword">
+                                    <i class="bi bi-eye-slash" id="eyeIcon"></i>
+                                </span>
+                            </div>
                         </div>
-                        <hr class="my-3 mt-4 mb-4">
-                        <button id="btnCadastro" type="submit" class="btn btn-danger w-100 py-2 mb-3 fw-bold">Login</button>
-                        <p class="text-center mt-2">
-                            Ainda não possui uma conta?
-                            <br>
-                            <a href="/templates/cadastro-usuario.html" class="text-danger text-decoration-none">Registrar-se</a>
+                        <div id="login-feedback" class="text-center mb-3 fw-semibold text-danger"></div>
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-danger btn-lg fw-bold d-flex align-items-center justify-content-center gap-2">
+                                <span class="button-text">Entrar</span>
+                                <div class="loading spinner-hidden">
+                                    <svg width="64px" height="48px">
+                                        <polyline points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24" id="back"></polyline>
+                                        <polyline points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24" id="front"></polyline>
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+                        <p class="text-center mt-3 small">
+                            Ainda não tem uma conta?
+                            <a href="/signup.html" class="text-danger text-decoration-none fw-bold">Cadastre sua empresa</a>
                         </p>
-                        <p id="mensagem" class="text-center mt-3"></p>
                     </form>
                 </div>
-            </div>
-            <div class="gradient-section d-none d-md-flex flex-column justify-content-center align-items-center text-white p-4">
-                <img src="/static/img/lock-solid-full.svg" alt="Logo da SafeVest" class="img-fluid mb-3 logo-pequena icone-branco">
-                <h3 class="text-center fw-semibold">A sua segurança em primeiro lugar.</h3>
-                <p class="text-center fw-medium">Acesse sua conta para proteger o que é mais importante para você.</p>
+                <div class="col-lg-6 gradient-section d-none d-lg-flex">
+                    <img src="/static/img/lock-solid-full.svg" alt="Logo da SafeVest" class="img-fluid mb-3 logo-pequena icone-branco">
+                    <h3 class="text-center fw-semibold">A sua segurança em primeiro lugar.</h3>
+                    <p class="text-center fw-medium">Acesse sua conta para proteger o que é mais importante para você.</p>
+                </div>
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+        <script>
+      // Mostrar/ocultar senha
+      const togglePassword = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+      const eyeIcon = document.getElementById('eyeIcon');
+
+      togglePassword.addEventListener('click', () => {
+        const tipo = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', tipo);
+        eyeIcon.classList.toggle('bi-eye');
+        eyeIcon.classList.toggle('bi-eye-slash');
+      });
+        </script>
+        <script src="/static/js/login.js"></script>
     </body>
 </html>
