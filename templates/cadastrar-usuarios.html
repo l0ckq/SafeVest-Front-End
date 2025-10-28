@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-br">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>SafeVest - Cadastrar Novo Usuário</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="/static/css/style.css">
+    </head>
+    <body>
+        <div class="d-flex" id="wrapper">
+            <div id="sidebar-wrapper"></div>
+            <div id="page-content-wrapper">
+                <nav class="d-flex align-items-center justify-content-between bg-danger text-white p-3 shadow-sm">
+                    <div class="d-flex gap-3 align-items-center">
+                        <a href="#" class="text-white fs-4" id="menu-toggle">
+                            <i class="bi bi-list"></i>
+                        </a>
+                        <span class="fs-5 fw-bold">Cadastrar Novo Usuário</span>
+                    </div>
+                    <a href="/templates/trabalhadores.html" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Voltar
+                    </a>
+                </nav>
+                <main class="container-fluid my-4">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body p-4 p-md-5">
+                                    <h5 class="card-title mb-3">Novo Colaborador</h5>
+                                    <p class="card-text text-muted">
+                                        Preencha os dados abaixo para criar um novo usuário no sistema.
+                                    </p>
+                                    <form id="form-cadastro-usuario">
+                                        <!-- Linha 1: Nome Completo (Full Width) -->
+                                        <div class="row">
+                                            <div class="col-12 mb-3">
+                                                <div class="form-floating">
+                                                    <input
+                                                        type="text"
+                                                        class="form-control"
+                                                        id="nome_completo"
+                                                        placeholder="Nome Completo"
+                                                        required
+                                                    >
+                                                    <label for="nome_completo">Nome Completo</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Linha 2: Senha e Confirmação de Senha (Lado a Lado) -->
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="password" class="form-label fw-semibold small">Senha Provisória</label>
+                                                <div class="input-group">
+                                                    <input
+                                                        type="password"
+                                                        class="form-control"
+                                                        id="password"
+                                                        placeholder="Crie uma senha"
+                                                        required
+                                                    >
+                                                    <span class="input-group-text" id="togglePassword" style="cursor: pointer;">
+                                                        <i class="bi bi-eye-slash" id="eyeIcon"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="confirm_password" class="form-label fw-semibold small">Confirmar Senha</label>
+                                                <div class="input-group">
+                                                    <input
+                                                        type="password"
+                                                        class="form-control"
+                                                        id="confirm_password"
+                                                        placeholder="Repita a senha"
+                                                        required
+                                                    >
+                                                    <span class="input-group-text" id="toggleConfirmPassword" style="cursor: pointer;">
+                                                        <i class="bi bi-eye-slash" id="eyeIconConfirm"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Linha 3: Função e Email (Lado a Lado) -->
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-floating">
+                                                    <select class="form-select" id="funcao" required>
+                                                        <option value="" disabled selected>Selecione a função...</option>
+                                                        <option value="Administrador">Administrador</option>
+                                                        <option value="Supervisor">Supervisor</option>
+                                                        <option value="Operador">Operador</option>
+                                                    </select>
+                                                    <label for="funcao">Função</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-floating">
+                                                    <input
+                                                        type="email"
+                                                        class="form-control"
+                                                        id="email"
+                                                        placeholder="Email (será o login)"
+                                                        required
+                                                    >
+                                                    <label for="email">Email (será o login)</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="feedback-alert" class="alert d-none mt-3" role="alert"></div>
+                                        <div class="d-flex justify-content-center mt-4">
+                                            <button type="submit" class="btn btn-danger d-inline-flex align-items-center justify-content-center gap-2" style="min-width: 150px;">
+                                                <span class="button-text">Criar Usuário</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/static/js/auth_jwt.js"></script>
+        <script src="/static/js/layout.js"></script>
+        <script src="/static/js/cadastro-usuarios.js"></script>
+        <script src="/static/js/auth.js"></script>
+    </body>
+</html>
