@@ -1,131 +1,155 @@
-const workersData = [
-    { id: 1, serial: 'SV-1001', name: 'Cleber Xavier', imageUrl: 'https://i.pravatar.cc/150?img=1', heartRate: 78, oxygen: 99, role: 'Operador' },
-    { id: 2, serial: 'SV-1002', name: 'Marina Silva',  imageUrl: 'https://i.pravatar.cc/150?img=5', heartRate: 95, oxygen: 98, role: 'Supervisor' },
-    { id: 3, serial: 'SV-1003', name: 'Lucas Alves',   imageUrl: 'https://i.pravatar.cc/150?img=3', heartRate: 125, oxygen: 96, role: 'Operador' },
-    { id: 4, serial: 'SV-1004', name: 'Fernanda Dias', imageUrl: 'https://i.pravatar.cc/150?img=4', heartRate: 165, oxygen: 91, role: 'Administrador' },
-    { id: 5, serial: 'SV-1005', name: 'Patrícia Souza',imageUrl: 'https://i.pravatar.cc/150?img=8', heartRate: 82, oxygen: 94, role: 'Operador' },
-    { id: 6, serial: 'SV-1006', name: 'Bruno Araújo',  imageUrl: 'https://i.pravatar.cc/150?img=6', heartRate: 65, oxygen: 88, role: 'Supervisor' },
-];
+document.addEventListener("DOMContentLoaded", async () => {
+  const API_BASE = "http://127.0.0.1:8000/api";
+  const TABELA = document.querySelector("#workers-table-body");
+  const FEEDBACK = document.querySelector("#feedback-message");
+  const SEARCH_INPUT = document.querySelector("#searchInput");
 
-function calcularStatus(worker) {
-    if (worker.heartRate > 160 || worker.heartRate < 50 || worker.oxygen < 90) return 'Emergência';
-    if (worker.heartRate > 120 || worker.heartRate < 60 || worker.oxygen < 95) return 'Alerta';
-    return 'Seguro';
-}
+  // =============== 🧠 Funções auxiliares ===================
 
-function renderWorkersAsCards(workers, containerId) {
-    const container = document.querySelector(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-    
-    if (workers.length === 0) {
-        container.innerHTML = `<div class="col-12"><div class="alert alert-secondary mt-2 text-center">Nenhum trabalhador encontrado.</div></div>`;
-        return;
-    }
+  // Fetch autenticado usando token JWT
+  async function fetchWithAuth(url, options = {}) {
+    const token = localStorage.getItem("access_token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    };
+    const resp = await fetch(url, { ...options, headers });
+    return resp;
+  }
 
-    workers.forEach(worker => {
-        const statusAtual = calcularStatus(worker);
-        let statusClass = '';
-        if (statusAtual === 'Seguro') statusClass = 'status-seguro';
-        if (statusAtual === 'Alerta') statusClass = 'status-alerta';
-        if (statusAtual === 'Emergência') statusClass = 'status-emergencia';
+  // Renderiza tabela de usuários
+  function renderUsuarios(usuarios) {
+    TABELA.innerHTML = "";
 
-        const cardWrapper = document.createElement('div');
-        cardWrapper.className = 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-4';
-        cardWrapper.innerHTML = `
-            <div class="worker-card" data-worker-id="${worker.id}">
-                <div class="status-dot ${statusClass}" title="Status: ${statusAtual}"></div>
-                <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="worker-card-avatar">
-                <div class="worker-card-name">${worker.name}</div>
-                <div class="worker-card-serial">${worker.serial}</div>
-            </div>
-        `;
-        
-        cardWrapper.querySelector('.worker-card').addEventListener('click', () => {
-            window.location.href = `/detalhes.html?id=${worker.user.id}`;
-        });
-        container.appendChild(cardWrapper);
-    });
-}
-
-function renderWorkersAsTable(workers, containerId) {
-    const tableBody = document.querySelector(containerId);
-    if (!tableBody) return;
-    const feedbackMessage = document.querySelector('#feedback-message');
-    tableBody.innerHTML = '';
-    
-    if (workers.length === 0) {
-        tableBody.style.display = 'none';
-        if (feedbackMessage) feedbackMessage.style.display = 'block';
+    if (!usuarios || usuarios.length === 0) {
+      FEEDBACK.style.display = "block";
+      return;
     } else {
-        tableBody.style.display = '';
-        if (feedbackMessage) feedbackMessage.style.display = 'none';
+      FEEDBACK.style.display = "none";
     }
 
-    workers.forEach(worker => {
-        const statusAtual = calcularStatus(worker);
-        let statusClass = '';
-        if (statusAtual === 'Seguro') statusClass = 'status-indicator-seguro';
-        if (statusAtual === 'Alerta') statusClass = 'status-indicator-alerta';
-        if (statusAtual === 'Emergência') statusClass = 'status-indicator-emergencia';
-        
-        const row = document.createElement('tr');
-        row.dataset.workerId = worker.id;
-        
-        // --- MUDANÇA PRINCIPAL AQUI ---
-        row.innerHTML = `
-            <td class="clickable-row">
-                <div class="d-flex align-items-center">
-                    <img src="${worker.imageUrl}" alt="Avatar de ${worker.name}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                    <div>
-                        <div class="fw-bold">${worker.name}</div>
-                        <div class="text-muted small">${worker.role}</div>
-                    </div>
-                </div>
-            </td>
-            <td class="clickable-row">${worker.serial}</td>
-            <td class="clickable-row">
-                <div class="status-indicator ${statusClass}">
-                    <span class="status-indicator-dot"></span>
-                    <span>${statusAtual}</span>
-                </div>
-            </td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn btn-icon btn-edit" title="Editar ${worker.name}">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-icon btn-delete" title="Excluir ${worker.name}">
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        
-        // Adiciona o evento de clique para a LINHA INTEIRA
-        row.addEventListener('click', () => {
-            window.location.href = `/detalhes.html?id=${worker.profile.user.id}`;
-        });
+    usuarios.forEach((u) => {
+      const ativoBadge = u.ativo
+        ? `<span class="badge bg-success">Ativo</span>`
+        : `<span class="badge bg-secondary">Inativo</span>`;
 
-        // Seleciona os botões que acabamos de criar DENTRO da linha
-        const editButton = row.querySelector('.btn-edit');
-        const deleteButton = row.querySelector('.btn-delete');
-
-        // Adiciona o evento de clique para o BOTÃO DE EDITAR
-        editButton.addEventListener('click', (event) => {
-            // ESSA LINHA É A MÁGICA: Impede que o clique no botão ative o clique na linha inteira.
-            event.stopPropagation(); 
-            console.log(`Clicou em EDITAR o trabalhador com ID: ${worker.id}`);
-            // No futuro, levará para a página de edição
-        });
-
-        // Adiciona o evento de clique para o BOTÃO DE EXCLUIR
-        deleteButton.addEventListener('click', (event) => {
-            event.stopPropagation(); // Impede o clique de "vazar" para a linha
-            console.log(`Clicou em EXCLUIR o trabalhador com ID: ${worker.id}`);
-            // No futuro, levará para a página de confirmação de exclusão
-        });
-        
-        tableBody.appendChild(row);
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${u.nome}</td>
+        <td>${u.funcao}</td>
+        <td>${ativoBadge}</td>
+        <td>
+          <div class="btn-group" role="group">
+            <button class="btn btn-outline-danger btn-sm ver-btn" title="Ver detalhes" data-id="${u.id}">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-outline-primary btn-sm editar-btn" title="Editar" data-id="${u.id}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm excluir-btn" title="Excluir" data-id="${u.id}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      TABELA.appendChild(row);
     });
-}
+
+    registrarEventosAcoes();
+  }
+
+  // Registra eventos dos botões de ação
+  function registrarEventosAcoes() {
+    document.querySelectorAll(".ver-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const id = e.currentTarget.dataset.id;
+        window.location.href = `/templates/detalhes.html?id=${id}`;
+      });
+    });
+
+    document.querySelectorAll(".editar-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const id = e.currentTarget.dataset.id;
+        window.location.href = `/templates/editar-usuario.html?id=${id}`;
+      });
+    });
+
+    document.querySelectorAll(".excluir-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (confirm("Tem certeza que deseja excluir este usuário?")) {
+          await excluirUsuario(id);
+        }
+      });
+    });
+  }
+
+  // Excluir usuário (soft delete)
+  async function excluirUsuario(id) {
+    try {
+      const resp = await fetchWithAuth(`${API_BASE}/usuarios/${id}/`, {
+        method: "DELETE",
+      });
+
+      if (resp.ok) {
+        alert("Usuário excluído com sucesso!");
+        await carregarUsuarios();
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        alert("Erro ao excluir: " + (err.erro || "desconhecido"));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro de rede: " + error.message);
+    }
+  }
+
+  // Filtrar usuários por texto (nome/email)
+  function filtrarUsuarios(lista, termo) {
+    termo = termo.toLowerCase();
+    return lista.filter(
+      (u) =>
+        u.nome.toLowerCase().includes(termo) ||
+        u.email.toLowerCase().includes(termo)
+    );
+  }
+
+  // ==================== 🚀 Lógica Principal =====================
+
+  let listaUsuarios = [];
+
+  async function carregarUsuarios() {
+    try {
+      const resp = await fetchWithAuth(`${API_BASE}/usuarios/`);
+      if (resp.status === 401) {
+        alert("Sessão expirada. Faça login novamente.");
+        window.location.href = "/templates/login.html";
+        return;
+      }
+
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`Erro ao buscar usuários: ${txt}`);
+      }
+
+      const data = await resp.json();
+      listaUsuarios = data.usuarios || [];
+      renderUsuarios(listaUsuarios);
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error);
+      FEEDBACK.textContent = "Erro ao carregar usuários.";
+      FEEDBACK.style.display = "block";
+    }
+  }
+
+  // Evento de pesquisa
+  SEARCH_INPUT.addEventListener("input", () => {
+    const termo = SEARCH_INPUT.value.trim();
+    const filtrados = filtrarUsuarios(listaUsuarios, termo);
+    renderUsuarios(filtrados);
+  });
+
+  // Carrega na inicialização
+  await carregarUsuarios();
+});

@@ -1,33 +1,68 @@
-// Formulário deve ter inputs #email #password e #login-feedback
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ login.js carregado e DOM pronto.");
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('#login-form');
-    if (!form) return;
+  const form = document.getElementById("login-form");
+  const feedback = document.getElementById("login-feedback");
+  const spinner = document.querySelector(".loading");
+  const buttonText = document.querySelector(".button-text");
 
-    const emailInput = document.querySelector('#email');
-    const passInput = document.querySelector('#password');
-    const feedback = document.querySelector('#login-feedback');
-    const btn = form.querySelector('button[type="submit"]');
+  if (!form) {
+    console.error("❌ Formulário #login-form não encontrado!");
+    return;
+  }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = emailInput.value.trim();
-        const password = passInput.value;
-        if (!email || !password) {
-            SafeVestAuth.showFormAlert('#login-feedback', 'Preencha email e senha.', 'warning');
-            return;
-        }
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        btn.disabled = true;
-        SafeVestAuth.clearFormAlert('#login-feedback');
-        try {
-            await SafeVestAuth.loginWithCredentials(email, password);
-            SafeVestAuth.showFormAlert('#login-feedback', 'Login realizado com sucesso. Redirecionando...', 'success');
-            setTimeout(() => { window.location.href = '/dashboard/'; }, 700);
-        } catch (err) {
-            SafeVestAuth.showFormAlert('#login-feedback', 'Erro ao logar: ' + (err.message || err), 'danger');
-        } finally {
-            btn.disabled = false;
-        }
-    });
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+
+    if (!emailInput || !passwordInput) {
+      console.error("❌ Campos de email ou senha não encontrados.");
+      feedback.textContent = "Erro interno: campos não encontrados.";
+      return;
+    }
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      feedback.textContent = "Preencha todos os campos.";
+      return;
+    }
+
+    // Ativa o spinner
+    spinner.classList.remove("spinner-hidden");
+    buttonText.textContent = "Entrando...";
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        feedback.textContent = data.detail || "Credenciais inválidas.";
+        return;
+      }
+
+      // Salva os tokens
+      localStorage.setItem("accessToken", data.access);
+      localStorage.setItem("refreshToken", data.refresh);
+      localStorage.setItem("userEmail", email);
+
+      feedback.textContent = "";
+      console.log("✅ Login bem-sucedido! Redirecionando...");
+      window.location.href = "/index.html";
+    } catch (err) {
+      console.error("Erro ao fazer login:", err);
+      feedback.textContent = "Erro ao conectar ao servidor.";
+    } finally {
+      spinner.classList.add("spinner-hidden");
+      buttonText.textContent = "Entrar";
+    }
+  });
 });

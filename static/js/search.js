@@ -1,30 +1,48 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.querySelector('#searchInput');
-    if (!searchInput) return;
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("searchInput");
+  const tableBody = document.getElementById("workers-table-body");
+  const feedback = document.getElementById("feedback-message");
 
-    // Identifica qual visualização a página atual está usando
-    const isCardsView = document.querySelector('#worker-cards-container');
-    const isTableView = document.querySelector('#workers-table-body');
+  if (!searchInput || !tableBody) return;
 
-    // A função principal que executa a busca
-    function performSearch() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
+  searchInput.addEventListener("input", () => {
+    const term = searchInput.value.toLowerCase();
 
-        // Filtra a lista de dados principal (que vem do trabalhadores.js)
-        const filteredWorkers = workersData.filter(worker => {
-            const name = worker.name.toLowerCase();
-            const serial = worker.serial.toLowerCase();
-            return name.includes(searchTerm) || serial.includes(searchTerm);
-        });
+    // Verifica se os dados já estão disponíveis no escopo global
+    const data = window.workersData || [];
+    if (!data.length) return;
 
-        // Chama a função de renderização correta com os dados filtrados
-        if (isCardsView) {
-            renderWorkersAsCards(filteredWorkers, '#worker-cards-container');
-        } else if (isTableView) {
-            renderWorkersAsTable(filteredWorkers, '#workers-table-body');
-        }
-    }
+    const filtered = data.filter(
+      (w) =>
+        (w.name && w.name.toLowerCase().includes(term)) ||
+        (w.role && w.role.toLowerCase().includes(term))
+    );
 
-    // "Ouve" cada tecla que o usuário digita no campo de busca
-    searchInput.addEventListener('keyup', performSearch);
+    renderFilteredTable(filtered, tableBody, feedback);
+  });
 });
+
+function renderFilteredTable(workers, container, feedbackEl) {
+  container.innerHTML = "";
+
+  if (!workers.length) {
+    feedbackEl.style.display = "block";
+    return;
+  }
+
+  feedbackEl.style.display = "none";
+
+  workers.forEach((w) => {
+    const row = document.createElement("tr");
+    const status = w.serial === "—" ? "Não associado" : "Ativo";
+    row.innerHTML = `
+      <td>${w.name}</td>
+      <td>${w.role}</td>
+      <td>${status}</td>
+      <td>
+        <button class="btn btn-outline-danger btn-sm"><i class="bi bi-eye"></i></button>
+      </td>
+    `;
+    container.appendChild(row);
+  });
+}
