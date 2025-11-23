@@ -1,101 +1,427 @@
-// Esta função pode ser movida para um arquivo 'utils.js' no futuro para ser reutilizada.
-function calcularStatus(leitura) {
-    if (!leitura) return { texto: 'Desconhecido', classe: 'status-indicator-offline' };
+// detalhes.js - Página de Detalhes Adaptada por Tipo de Usuário
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("[DETALHES] Script carregado");
 
-    const batimento = leitura.batimento;
-    if (batimento > 160 || batimento < 50) return { texto: 'Emergência', classe: 'status-indicator-emergencia' };
-    if (batimento > 120 || batimento < 60) return { texto: 'Alerta', classe: 'status-indicator-alerta' };
-    return { texto: 'Seguro', classe: 'status-indicator-seguro' };
-}
+  const API_BASE = "http://127.0.0.1:8000/api";
+  const CONTAINER = document.querySelector("#detalhes-container");
 
-async function carregarDetalhesTrabalhador() {
-    const container = document.querySelector('#detalhes-container');
-    if (!container) return;
+  // ============== AUTENTICAÇÃO ==============
+  function getTokens() {
+    return {
+      access: localStorage.getItem("accessToken"),
+      refresh: localStorage.getItem("refreshToken"),
+    };
+  }
+
+  function logout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/templates/login.html";
+  }
+
+  async function refreshToken() {
+    const { refresh } = getTokens();
+    if (!refresh) return false;
 
     try {
-        // 1. LER A URL para pegar o ID do Profile (que é o mesmo ID do User).
-        const params = new URLSearchParams(window.location.search);
-        const profileId = params.get('id');
+      const resp = await fetch(`${API_BASE}/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
 
-        if (!profileId) {
-            throw new Error("ID do trabalhador não fornecido na URL.");
-        }
+      if (!resp.ok) return false;
 
-        // 2. BUSCAR OS DADOS REAIS DA API DJANGO.
-        // Fazemos a chamada para o endpoint do Profile específico.
-        const response = await fetch(`http://127.0.0.1:8000/api/profile/${profileId}/`);
-        
-        if (!response.ok) {
-            throw new Error(`Trabalhador não encontrado (Status: ${response.status})`);
-        }
+      const data = await resp.json();
+      localStorage.setItem("accessToken", data.access);
+      return true;
+    } catch (err) {
+      console.error("[DETALHES] Erro ao renovar token:", err);
+      return false;
+    }
+  }
 
-        const profileData = await response.json();
-        
-        // --- SIMULAÇÃO DE DADOS DE SENSOR ---
-        // No futuro, aqui você faria outra chamada para buscar a ÚLTIMA leitura do sensor
-        // para este trabalhador, ex: /api/leiturasensor/?profile=${profileId}&latest=true
-        const ultimaLeitura = { batimento: Math.floor(Math.random() * 40) + 70 }; // Dado fake por enquanto
-        const status = calcularStatus(ultimaLeitura);
+  async function fetchWithAuth(url, options = {}, retry = true) {
+    const { access } = getTokens();
 
-        // 3. DESENHAR A PÁGINA com os dados recebidos.
-        container.innerHTML = `
-            <div class="bg-white p-4 rounded shadow-sm">
-                <div class="row align-items-center">
-                    <div class="col-lg-2 col-md-3 text-center">
-                        <img src="https://i.pravatar.cc/150?u=${profileData.user.id}" alt="${profileData.user.first_name}" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
-                    </div>
-                    <div class="col-lg-10 col-md-9">
-                        <h2 class="mb-1">${profileData.user.first_name}</h2>
-                        <p class="text-muted fs-5 mb-2">${profileData.setor ? profileData.setor.nome : 'Setor não definido'}</p>
-                        <div class="d-flex align-items-center">
-                            <strong class="me-2">Status Atual:</strong>
-                            <div class="status-indicator ${status.classe}">
-                                <span class="status-indicator-dot"></span>
-                                <span>${status.texto}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <hr class="my-4">
-                <h4>Dados Atuais dos Sensores</h4>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-header"><i class="bi bi-heart-pulse-fill text-danger me-2"></i>Batimento Cardíaco</div>
-                            <div class="card-body">
-                                <h3 class="card-title">${ultimaLeitura.batimento} <span class="fs-6 text-muted">BPM</span></h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-header"><i class="bi bi-lungs-fill text-primary me-2"></i>Oxigenação (SpO2)</div>
-                            <div class="card-body">
-                                <h3 class="card-title">-- <span class="fs-6 text-muted">%</span></h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                         <div class="card text-center">
-                            <div class="card-header"><i class="bi bi-thermometer-half text-info me-2"></i>Temperatura</div>
-                            <div class="card-body">
-                                <h3 class="card-title">-- <span class="fs-6 text-muted">°C</span></h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    if (!access) {
+      logout();
+      return null;
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access}`,
+      ...options.headers,
+    };
+
+    try {
+      const resp = await fetch(url, { ...options, headers });
+
+      if (resp.status === 401 && retry) {
+        const renovado = await refreshToken();
+        if (renovado) return fetchWithAuth(url, options, false);
+        logout();
+        return null;
+      }
+
+      return resp;
+    } catch (err) {
+      console.error("[DETALHES] Erro na requisição:", err);
+      throw err;
+    }
+  }
+
+  // ============== UTILITÁRIOS ==============
+  function getTipoUsuario(usuario) {
+    // Tenta extrair o tipo de várias formas possíveis
+    console.log("[DETALHES] Analisando usuário para tipo:", usuario);
+    
+    // Método 1: campo groups
+    if (usuario.groups && usuario.groups.length > 0) {
+      const grupo = typeof usuario.groups[0] === 'string' 
+        ? usuario.groups[0].toLowerCase() 
+        : (usuario.groups[0]?.name || usuario.groups[0]?.grupo || '').toLowerCase();
+      
+      if (grupo === "administrador") return "administrador";
+      if (grupo === "supervisor") return "supervisor";
+      if (grupo === "operador") return "operador";
+    }
+    
+    // Método 2: campo funcao (que existe no seu objeto!)
+    if (usuario.funcao) {
+      const funcao = usuario.funcao.toLowerCase();
+      if (funcao.includes("administrador")) return "administrador";
+      if (funcao.includes("supervisor")) return "supervisor";
+      if (funcao.includes("operador")) return "operador";
+    }
+    
+    // Método 3: outros campos possíveis
+    if (usuario.tipo_usuario) {
+      const tipo = usuario.tipo_usuario.toLowerCase();
+      if (tipo === "administrador") return "administrador";
+      if (tipo === "supervisor") return "supervisor";
+      if (tipo === "operador") return "operador";
+    }
+    
+    console.warn("[DETALHES] Não conseguiu identificar tipo do usuário");
+    return "desconhecido";
+  }
+
+  function calcularStatus(batimento) {
+    if (!batimento || batimento === 0) {
+      return { texto: "Offline", classe: "secondary", icone: "bi-wifi-off" };
+    }
+    if (batimento > 160 || batimento < 50) {
+      return { texto: "Emergência", classe: "danger", icone: "bi-exclamation-triangle-fill" };
+    }
+    if (batimento > 120 || batimento < 60) {
+      return { texto: "Alerta", classe: "warning", icone: "bi-exclamation-circle-fill" };
+    }
+    return { texto: "Seguro", classe: "success", icone: "bi-check-circle-fill" };
+  }
+
+  // ============== RENDERIZAÇÃO POR TIPO ==============
+  function renderCabecalho(usuario, tipo) {
+    const iconePorTipo = {
+      administrador: "bi-shield-fill-exclamation text-danger",
+      supervisor: "bi-person-badge text-warning",
+      operador: "bi-person-fill text-primary",
+    };
+
+    const corPorTipo = {
+      administrador: "danger",
+      supervisor: "warning",
+      operador: "primary",
+    };
+
+    // const icone = iconePorTipo[tipo] || "bi-person";
+    const icone = "bi-person";
+    const cor = corPorTipo[tipo] || "secondary";
+
+    return `
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto text-center">
+              <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                <i class="bi ${icone}" style="font-size: 3rem;"></i>
+              </div>
             </div>
+            <div class="col">
+              <h2 class="mb-1">${usuario.nome  || usuario.username}</h2>
+              <p class="text-muted mb-2">
+                <i class="bi bi-envelope me-2"></i>${usuario.email || "Email não cadastrado"}
+              </p>
+              <p class="mb-2">
+                <i class="bi bi-briefcase me-2"></i>${usuario.funcao || "Função não especificada"}
+              </p>
+              <span class="badge bg-${cor} fs-6">
+                <i class="bi ${icone.split(' ')[0]} me-1"></i>
+                ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderEstatisticasAdmin(usuario) {
+    // Administradores veem estatísticas gerenciais
+    return `
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-graph-up me-2"></i>
+            Estatísticas de Gestão
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-4 mb-3">
+              <i class="bi bi-calendar-check text-danger fs-2"></i>
+              <h4 class="mt-2">N/A</h4>
+              <p class="text-muted">Dias desde Cadastro</p>
+            </div>
+            <div class="col-md-4 mb-3">
+              <i class="bi bi-people text-danger fs-2"></i>
+              <h4 class="mt-2">N/A</h4>
+              <p class="text-muted">Usuários Gerenciados</p>
+            </div>
+            <div class="col-md-4 mb-3">
+              <i class="bi bi-shield-check text-danger fs-2"></i>
+              <h4 class="mt-2">N/A</h4>
+              <p class="text-muted">Vestes Cadastradas</p>
+            </div>
+          </div>
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>
+            Administradores não podem ser associados a SafeVests e não possuem dados de sensores.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderEstatisticasSupervisor(usuario) {
+    // Supervisores veem estatísticas de monitoramento
+    return `
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="bi bi-eye me-2"></i>
+            Estatísticas de Supervisão
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-4 mb-3">
+              <i class="bi bi-person-check text-warning fs-2"></i>
+              <h4 class="mt-2">N/A</h4>
+              <p class="text-muted">Operadores Sob Supervisão</p>
+            </div>
+            <div class="col-md-4 mb-3">
+              <i class="bi bi-bell text-warning fs-2"></i>
+              <h4 class="mt-2">N/A</h4>
+              <p class="text-muted">Alertas Tratados</p>
+            </div>
+            <div class="col-md-4 mb-3">
+              <i class="bi bi-graph-up-arrow text-warning fs-2"></i>
+              <h4 class="mt-2">N/A</h4>
+              <p class="text-muted">Intervenções Realizadas</p>
+            </div>
+          </div>
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>
+            Supervisores não são associados a SafeVests, mas podem visualizar dados de operadores.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function renderDadosOperador(usuario, profileId) {
+    // Buscar veste associada
+    let vesteData = null;
+    let ultimaLeitura = null;
+
+    try {
+      const respVestes = await fetchWithAuth(`${API_BASE}/veste/`);
+      if (respVestes && respVestes.ok) {
+        const vestes = await respVestes.json();
+        const vestesArray = Array.isArray(vestes) ? vestes : (vestes.results || []);
+        vesteData = vestesArray.find(v => v.profile?.user === usuario.id);
+      }
+    } catch (err) {
+      console.error("[DETALHES] Erro ao buscar veste:", err);
+    }
+
+    // Se tem veste, buscar última leitura
+    if (vesteData) {
+      try {
+        const respLeituras = await fetchWithAuth(`${API_BASE}/leiturasensor/?profile=${profileId}`);
+        if (respLeituras && respLeituras.ok) {
+          const leituras = await respLeituras.json();
+          const leiturasArray = Array.isArray(leituras) ? leituras : (leituras.results || []);
+          ultimaLeitura = leiturasArray.length > 0 ? leiturasArray[leiturasArray.length - 1] : null;
+        }
+      } catch (err) {
+        console.error("[DETALHES] Erro ao buscar leituras:", err);
+      }
+    }
+
+    const status = ultimaLeitura ? calcularStatus(ultimaLeitura.batimento) : { texto: "Sem Dados", classe: "secondary", icone: "bi-wifi-off" };
+
+    return `
+      <!-- Status da Veste -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-shield-check me-2"></i>
+            SafeVest Associada
+          </h5>
+        </div>
+        <div class="card-body">
+          ${vesteData ? `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h5 class="mb-1">Número de Série: <strong>${vesteData.numero_de_serie}</strong></h5>
+                <p class="text-muted mb-0">ID da Veste: ${vesteData.id}</p>
+              </div>
+              <div>
+                <span class="badge bg-${status.classe} fs-6">
+                  <i class="bi ${status.icone} me-1"></i>
+                  ${status.texto}
+                </span>
+              </div>
+            </div>
+          ` : `
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              Este operador ainda não possui uma SafeVest associada.
+            </div>
+          `}
+        </div>
+      </div>
+
+      <!-- Dados dos Sensores -->
+      ${vesteData && ultimaLeitura ? `
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-activity me-2"></i>
+              Dados Atuais dos Sensores
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-4 mb-3">
+                <div class="card border-danger">
+                  <div class="card-body">
+                    <i class="bi bi-heart-pulse-fill text-danger fs-1"></i>
+                    <h3 class="mt-2 mb-0">${ultimaLeitura.batimento || '--'}</h3>
+                    <p class="text-muted">BPM</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card border-primary">
+                  <div class="card-body">
+                    <i class="bi bi-droplet-fill text-primary fs-1"></i>
+                    <h3 class="mt-2 mb-0">${ultimaLeitura.oxigenacao || '--'}</h3>
+                    <p class="text-muted">SpO2 %</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card border-info">
+                  <div class="card-body">
+                    <i class="bi bi-thermometer-half text-info fs-1"></i>
+                    <h3 class="mt-2 mb-0">${ultimaLeitura.temperatura || '--'}</h3>
+                    <p class="text-muted">°C</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="text-muted text-center">
+              <small>
+                <i class="bi bi-clock me-1"></i>
+                Última atualização: ${ultimaLeitura.timestamp ? new Date(ultimaLeitura.timestamp).toLocaleString('pt-BR') : 'N/A'}
+              </small>
+            </div>
+          </div>
+        </div>
+      ` : vesteData ? `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          Nenhuma leitura de sensor disponível no momento.
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // ============== CARREGAMENTO PRINCIPAL ==============
+  async function carregarDetalhes() {
+    try {
+      // Pega ID da URL
+      const params = new URLSearchParams(window.location.search);
+      const userId = params.get("id");
+
+      if (!userId) {
+        throw new Error("ID do usuário não fornecido na URL");
+      }
+
+      console.log("[DETALHES] Carregando usuário ID:", userId);
+
+      // Busca dados do usuário
+      const respUsuario = await fetchWithAuth(`${API_BASE}/usuarios/${userId}/`);
+      if (!respUsuario || !respUsuario.ok) {
+        throw new Error("Usuário não encontrado");
+      }
+
+      const usuario = await respUsuario.json();
+      console.log("[DETALHES] Dados do usuário:", usuario);
+
+      // Identifica tipo (agora passa o objeto inteiro)
+      const tipo = getTipoUsuario(usuario);
+      console.log("[DETALHES] Tipo identificado:", tipo);
+
+      // Renderiza cabeçalho
+      let html = renderCabecalho(usuario, tipo);
+
+      // Renderiza conteúdo específico por tipo
+      if (tipo === "administrador") {
+        html += renderEstatisticasAdmin(usuario);
+      } else if (tipo === "supervisor") {
+        html += renderEstatisticasSupervisor(usuario);
+      } else if (tipo === "operador") {
+        html += await renderDadosOperador(usuario, userId);
+      } else {
+        html += `
+          <div class="alert alert-warning">
+            <i class="bi bi-question-circle me-2"></i>
+            Tipo de usuário desconhecido. Entre em contato com o administrador.
+          </div>
         `;
+      }
+
+      CONTAINER.innerHTML = html;
 
     } catch (error) {
-        console.error("Falha ao carregar detalhes:", error);
-        container.innerHTML = `
-            <div class="alert alert-danger text-center">
-                <h4>Erro ao Carregar Dados</h4>
-                <p>${error.message}</p>
-            </div>
-        `;
+      console.error("[DETALHES] Erro ao carregar:", error);
+      CONTAINER.innerHTML = `
+        <div class="alert alert-danger">
+          <h4><i class="bi bi-exclamation-triangle me-2"></i>Erro ao Carregar Dados</h4>
+          <p>${error.message}</p>
+          <a href="/templates/index.html" class="btn btn-danger mt-2">
+            <i class="bi bi-arrow-left me-1"></i>Voltar ao Dashboard
+          </a>
+        </div>
+      `;
     }
-}
+  }
 
-document.addEventListener('DOMContentLoaded', carregarDetalhesTrabalhador);
+  // ============== INICIALIZAÇÃO ==============
+  await carregarDetalhes();
+});
