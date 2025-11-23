@@ -29,26 +29,64 @@
                         <div class="col-lg-8">
                             <div class="card shadow-sm">
                                 <div class="card-body p-4">
-                                    <h5 class="card-title mb-3">Cadastro de Novas Vestes</h5>
-                                    <p class="card-text text-muted">Cole ou digite os números de série das vestes no campo abaixo, um por linha. O sistema irá criar apenas as vestes que ainda não existem.</p>
+                                    <h5 class="card-title mb-3">Cadastro em Lote de SafeVests</h5>
+                                    <p class="card-text text-muted">
+                                        Cole ou digite os números de série das vestes no campo abaixo, <strong>um por linha</strong>. 
+                                        O sistema irá criar apenas as vestes que ainda não existem.
+                                    </p>
+                                    
                                     <form id="form-cadastro-vestes">
+                                        <!-- Status Padrão -->
                                         <div class="mb-3">
-                                            <label for="seriais-input" class="form-label">Números de Série:</label>
-                                            <textarea
-                                                class="form-control"
-                                                id="seriais-input"
-                                                rows="10"
-                                                placeholder="SV-DEMO-01&#10;SV-DEMO-02&#10;SV-DEMO-03"
-                                            ></textarea>
+                                            <label for="status-padrao" class="form-label fw-semibold">
+                                                <i class="bi bi-toggle-on me-1"></i>
+                                                Status Padrão das Vestes
+                                            </label>
+                                            <select class="form-select" id="status-padrao" required>
+                                                <option value="ativa" selected>Ativa</option>
+                                                <option value="inativo">Inativo</option>
+                                            </select>
+                                            <small class="form-text text-muted">
+                                                Todas as vestes serão criadas com este status.
+                                            </small>
                                         </div>
-                                        <button type="submit" class="btn btn-danger">
-                                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                            Cadastrar Vestes
-                                        </button>
+
+                                        <!-- Números de Série -->
+                                        <div class="mb-3">
+                                            <label for="seriais-input" class="form-label fw-semibold">
+                                                <i class="bi bi-shield-check me-1"></i>
+                                                Números de Série
+                                            </label>
+                                            <textarea
+                                                class="form-control font-monospace"
+                                                id="seriais-input"
+                                                rows="12"
+                                                placeholder="SV-DEMO-01&#10;SV-DEMO-02&#10;SV-DEMO-03&#10;SV-DEMO-04&#10;SV-DEMO-05"
+                                                required
+                                            ></textarea>
+                                            <small class="form-text text-muted">
+                                                Digite um número de série por linha. Espaços e letras minúsculas serão automaticamente corrigidos.
+                                            </small>
+                                        </div>
+
+                                        <!-- Botão -->
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-danger">
+                                                <span class="spinner-border spinner-border-sm d-none" id="spinner" role="status"></span>
+                                                <i class="bi bi-plus-circle me-1"></i>
+                                                Cadastrar Vestes
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" id="btn-limpar">
+                                                <i class="bi bi-trash me-1"></i>
+                                                Limpar
+                                            </button>
+                                        </div>
                                     </form>
+
+                                    <!-- Feedback -->
                                     <div id="feedback-container" class="mt-4 d-none">
                                         <hr>
-                                        <h6>Resultado do Processamento:</h6>
+                                        <h6><i class="bi bi-clipboard-check me-2"></i>Resultado do Processamento</h6>
                                         <div id="feedback-alert" class="alert" role="alert"></div>
                                     </div>
                                 </div>
@@ -58,10 +96,203 @@
                 </main>
             </div>
         </div>
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="/static/js/auth_jwt.js"></script>
         <script src="/static/js/layout.js"></script>
-        <script src="/static/js/cadastrar-vestes.js"></script>
-        <script src="/static/js/auth.js"></script>
+
+        <script>
+            console.log("🟢 [VESTES] Script carregado");
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const API_BASE = "http://127.0.0.1:8000/api";
+                const form = document.querySelector('#form-cadastro-vestes');
+                const textArea = document.querySelector('#seriais-input');
+                const statusSelect = document.querySelector('#status-padrao');
+                const submitButton = form.querySelector('button[type="submit"]');
+                const spinner = document.querySelector('#spinner');
+                const feedbackContainer = document.querySelector('#feedback-container');
+                const feedbackAlert = document.querySelector('#feedback-alert');
+                const contadorTexto = document.querySelector('#contador-texto');
+                const btnLimpar = document.querySelector('#btn-limpar');
+
+                // Autenticação
+                function getTokens() {
+                    return {
+                        access: localStorage.getItem("accessToken"),
+                        refresh: localStorage.getItem("refreshToken"),
+                    };
+                }
+
+                function logout() {
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    window.location.href = "/templates/login.html";
+                }
+
+                async function refreshToken() {
+                    const { refresh } = getTokens();
+                    if (!refresh) return false;
+
+                    try {
+                        const resp = await fetch(`${API_BASE}/token/refresh/`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ refresh }),
+                        });
+
+                        if (!resp.ok) return false;
+
+                        const data = await resp.json();
+                        localStorage.setItem("accessToken", data.access);
+                        return true;
+                    } catch (err) {
+                        console.error("❌ [AUTH] Erro ao renovar token:", err);
+                        return false;
+                    }
+                }
+
+                async function fetchWithAuth(url, options = {}, retry = true) {
+                    const { access } = getTokens();
+
+                    if (!access) {
+                        alert("Sessão expirada. Faça login novamente.");
+                        logout();
+                        return null;
+                    }
+
+                    const headers = {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${access}`,
+                        ...options.headers,
+                    };
+
+                    try {
+                        const resp = await fetch(url, { ...options, headers });
+
+                        if (resp.status === 401 && retry) {
+                            const renovado = await refreshToken();
+                            if (renovado) return fetchWithAuth(url, options, false);
+                            logout();
+                            return null;
+                        }
+
+                        return resp;
+                    } catch (err) {
+                        console.error("💥 [FETCH] Erro:", err);
+                        throw err;
+                    }
+                }
+
+                // Normaliza serial (remove espaços e coloca em maiúscula)
+                function normalizeSerial(s) {
+                    return s.replace(/\s+/g, '').toUpperCase();
+                }
+
+                // Botão limpar
+                btnLimpar.addEventListener('click', () => {
+                    textArea.value = '';
+                    feedbackContainer.classList.add('d-none');
+                });
+
+                // Submit
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    console.log("🚀 [SUBMIT] Formulário enviado");
+                    feedbackContainer.classList.add('d-none');
+
+                    const textoSeriais = textArea.value;
+                    const status = statusSelect.value; // ← Agora pega 'ativa' ou 'inativo'
+
+                    if (!textoSeriais || !textoSeriais.trim()) {
+                        feedbackAlert.className = 'alert alert-warning';
+                        feedbackAlert.textContent = 'Por favor, insira ao menos um número de série.';
+                        feedbackContainer.classList.remove('d-none');
+                        return;
+                    }
+
+                    let lista = textoSeriais.split('\n')
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0)
+                        .map(normalizeSerial);
+
+                    lista = Array.from(new Set(lista));
+
+                    if (lista.length === 0) {
+                        feedbackAlert.className = 'alert alert-warning';
+                        feedbackAlert.textContent = 'Nenhum número de série válido encontrado.';
+                        feedbackContainer.classList.remove('d-none');
+                        return;
+                    }
+
+                    console.log("📦 [PAYLOAD]:", { seriais: lista, status });
+
+                    submitButton.disabled = true;
+                    spinner.classList.remove('d-none');
+
+                    try {
+                        const resp = await fetchWithAuth(`${API_BASE}/vestes/bulk-create/`, {
+                            method: 'POST',
+                            body: JSON.stringify({ seriais: lista, status: status }) // ← Envia 'status'
+                        });
+
+                        if (!resp) return;
+
+                        console.log("📨 [RESPONSE] Status:", resp.status);
+
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            console.log("📄 [RESPONSE] Data:", data);
+                            
+                            // Mostra feedback por 2 segundos e redireciona
+                            feedbackAlert.className = 'alert alert-success';
+                            let html = `<p class="mb-2"><strong>${data.mensagem || 'Processamento concluído.'}</strong></p>`;
+                            
+                            if (Array.isArray(data.criadas) && data.criadas.length) {
+                                html += '<div class="mb-2"><strong class="text-success">✓ Criadas com sucesso:</strong><ul class="mb-0 mt-1">';
+                                data.criadas.forEach(s => html += `<li>${s}</li>`);
+                                html += '</ul></div>';
+                            }
+                            
+                            if (Array.isArray(data.ignoradas) && data.ignoradas.length) {
+                                html += '<div><strong class="text-warning">⚠ Ignoradas (já existiam):</strong><ul class="mb-0 mt-1">';
+                                data.ignoradas.forEach(s => html += `<li>${s}</li>`);
+                                html += '</ul></div>';
+                            }
+                            
+                            feedbackAlert.innerHTML = html;
+                            feedbackContainer.classList.remove('d-none');
+                            
+                            // Redireciona após 2 segundos
+                            console.log("🔄 [REDIRECT] Redirecionando em 2s...");
+                            setTimeout(() => {
+                                window.location.href = "/templates/vestes.html";
+                            }, 2000);
+                        } else {
+                            const errorData = await resp.json().catch(() => ({ detail: 'Erro desconhecido' }));
+                            console.error("❌ [ERROR]:", errorData);
+                            
+                            let msg = errorData.detail || errorData.erro || JSON.stringify(errorData);
+                            
+                            if (resp.status === 401) msg = 'Não autorizado. Faça login.';
+                            if (resp.status === 403) msg = 'Você não tem permissão para cadastrar vestes.';
+                            
+                            feedbackAlert.className = 'alert alert-danger';
+                            feedbackAlert.textContent = msg;
+                            feedbackContainer.classList.remove('d-none');
+                        }
+                    } catch (error) {
+                        console.error("💥 [EXCEPTION]:", error);
+                        feedbackAlert.className = 'alert alert-danger';
+                        feedbackAlert.textContent = `Erro de rede: ${error.message}`;
+                        feedbackContainer.classList.remove('d-none');
+                    } finally {
+                        submitButton.disabled = false;
+                        spinner.classList.add('d-none');
+                    }
+                });
+
+                console.log("✅ [READY] Script de vestes pronto!");
+            });
+        </script>
     </body>
 </html>

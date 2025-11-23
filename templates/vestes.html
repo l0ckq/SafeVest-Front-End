@@ -19,43 +19,329 @@
                         </a>
                         <span class="fs-5 fw-bold">Gerenciamento de Vestes</span>
                     </div>
-                    <button class="btn btn-light btn-sm">
-                        <a class="dropdown-item" href="/templates/cadastrar-vestes.html">
-                            <i class="bi bi-plus-circle me-2"></i>
-                            Adicionar
-                        </a>
-                    </button>
+                    <a href="/templates/cadastrar-vestes.html" class="btn btn-light btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Adicionar Vestes
+                    </a>
                 </nav>
                 <main class="container-fluid my-4">
-                    <div class="mb-3">
-                        <strong class="me-3">Filtrar por:</strong>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="todas">Todas</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="em-uso">Em Uso</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="disponiveis">Disponíveis</button>
+                    <!-- Filtros -->
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="me-3">Filtrar por:</strong>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="todas">Todas</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="em-uso">Em Uso</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="disponiveis">Disponíveis</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-muted" id="contador-vestes">Carregando...</span>
                         </div>
                     </div>
+
+                    <!-- Tabela -->
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col">Número de Série</th>
                                     <th scope="col">Status</th>
-                                    <th scope="col">Usuário Associado</th>
-                                    <th scope="col">Setor</th>
+                                    <th scope="col">Associação</th>
+                                    <th scope="col">Usuário</th>
                                     <th scope="col">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="vestes-table-body"></tbody>
+                            <tbody id="vestes-table-body">
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                        <div class="spinner-border text-danger" role="status">
+                                            <span class="visually-hidden">Carregando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </main>
             </div>
         </div>
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="/static/js/auth_jwt.js"></script>
         <script src="/static/js/layout.js"></script>
-        <script src="/static/js/vestes.js"></script>
-        <script src="/static/js/auth.js"></script>
+
+        <script>
+            console.log("🟢 [VESTES] Script carregado");
+
+            const API_BASE = "http://127.0.0.1:8000/api";
+            let todasAsVestes = [];
+
+            // ============== AUTENTICAÇÃO ==============
+            function getTokens() {
+                return {
+                    access: localStorage.getItem("accessToken"),
+                    refresh: localStorage.getItem("refreshToken"),
+                };
+            }
+
+            function logout() {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+                window.location.href = "/templates/login.html";
+            }
+
+            async function refreshToken() {
+                const { refresh } = getTokens();
+                if (!refresh) return false;
+
+                try {
+                    const resp = await fetch(`${API_BASE}/token/refresh/`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ refresh }),
+                    });
+
+                    if (!resp.ok) return false;
+
+                    const data = await resp.json();
+                    localStorage.setItem("accessToken", data.access);
+                    return true;
+                } catch (err) {
+                    console.error("❌ [AUTH] Erro ao renovar token:", err);
+                    return false;
+                }
+            }
+
+            async function fetchWithAuth(url, options = {}, retry = true) {
+                const { access } = getTokens();
+
+                if (!access) {
+                    alert("Sessão expirada. Faça login novamente.");
+                    logout();
+                    return null;
+                }
+
+                const headers = {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${access}`,
+                    ...options.headers,
+                };
+
+                try {
+                    const resp = await fetch(url, { ...options, headers });
+
+                    if (resp.status === 401 && retry) {
+                        const renovado = await refreshToken();
+                        if (renovado) return fetchWithAuth(url, options, false);
+                        logout();
+                        return null;
+                    }
+
+                    return resp;
+                } catch (err) {
+                    console.error("💥 [FETCH] Erro:", err);
+                    throw err;
+                }
+            }
+
+            // ============== RENDERIZAÇÃO ==============
+            function renderVestes(listaDeVestes) {
+                const tableBody = document.querySelector('#vestes-table-body');
+                const contador = document.querySelector('#contador-vestes');
+
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
+
+                // Atualiza contador
+                contador.textContent = `${listaDeVestes.length} veste(s) encontrada(s)`;
+
+                if (listaDeVestes.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nenhuma veste encontrada.</td></tr>';
+                    return;
+                }
+
+                listaDeVestes.forEach(veste => {
+                    const row = document.createElement('tr');
+                    
+                    // Verifica se tem profile associado
+                    const temProfile = veste.profile && veste.profile !== null;
+                    
+                    // Badge de status (ativa/inativa)
+                    const statusVeste = veste.status === 'ativa' 
+                        ? '<span class="badge bg-success">Ativa</span>' 
+                        : '<span class="badge bg-secondary">Inativa</span>';
+                    
+                    // Badge de associação (em uso / disponível)
+                    const statusAssociacao = temProfile
+                        ? '<span class="badge bg-primary">Em Uso</span>' 
+                        : '<span class="badge bg-warning text-dark">Disponível</span>';
+                    
+                    // Nome do usuário
+                    let nomeUsuario = '<span class="text-muted">—</span>';
+                    if (temProfile) {
+                        // Tenta diferentes estruturas de dados
+                        if (veste.profile.user) {
+                            nomeUsuario = veste.profile.user.first_name || veste.profile.user.username || 'Usuário';
+                        } else if (veste.profile.nome) {
+                            nomeUsuario = veste.profile.nome;
+                        }
+                    }
+
+                    row.innerHTML = `
+                        <td class="fw-bold font-monospace">${veste.numero_de_serie}</td>
+                        <td>${statusVeste}</td>
+                        <td>${statusAssociacao}</td>
+                        <td>${nomeUsuario}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                ${!temProfile ? `
+                                    <button class="btn btn-outline-primary associar-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Associar usuário">
+                                        <i class="bi bi-person-plus"></i>
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-outline-warning desassociar-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Desassociar usuário">
+                                        <i class="bi bi-person-dash"></i>
+                                    </button>
+                                `}
+                                <button class="btn btn-outline-danger excluir-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Excluir veste">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Registra eventos
+                registrarEventos();
+            }
+
+            function registrarEventos() {
+                // Botões de associar
+                document.querySelectorAll('.associar-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const serial = btn.dataset.serial;
+                        window.location.href = `/templates/associar-veste.html?id=${id}&serial=${serial}`;
+                    });
+                });
+
+                // Botões de desassociar
+                document.querySelectorAll('.desassociar-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const id = btn.dataset.id;
+                        const serial = btn.dataset.serial;
+                        if (confirm(`Desassociar veste ${serial}?`)) {
+                            await desassociarVeste(id);
+                        }
+                    });
+                });
+
+                // Botões de excluir
+                document.querySelectorAll('.excluir-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const id = btn.dataset.id;
+                        const serial = btn.dataset.serial;
+                        if (confirm(`Tem certeza que deseja EXCLUIR a veste ${serial}?`)) {
+                            await excluirVeste(id);
+                        }
+                    });
+                });
+            }
+
+            // ============== AÇÕES ==============
+            async function desassociarVeste(id) {
+                try {
+                    const resp = await fetchWithAuth(`${API_BASE}/veste/${id}/`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ profile: null })
+                    });
+
+                    if (resp && resp.ok) {
+                        alert('Veste desassociada com sucesso!');
+                        fetchVestes();
+                    } else {
+                        alert('Erro ao desassociar veste.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao desassociar:', error);
+                    alert('Erro de rede.');
+                }
+            }
+
+            async function excluirVeste(id) {
+                try {
+                    const resp = await fetchWithAuth(`${API_BASE}/veste/${id}/`, {
+                        method: 'DELETE'
+                    });
+
+                    if (resp && resp.ok) {
+                        alert('Veste excluída com sucesso!');
+                        fetchVestes();
+                    } else {
+                        alert('Erro ao excluir veste.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao excluir:', error);
+                    alert('Erro de rede.');
+                }
+            }
+
+            // ============== BUSCAR VESTES ==============
+            async function fetchVestes() {
+                try {
+                    console.log("📡 [FETCH] Buscando vestes...");
+                    const resp = await fetchWithAuth(`${API_BASE}/veste/`);
+
+                    if (!resp || !resp.ok) {
+                        throw new Error('Erro ao buscar vestes');
+                    }
+
+                    const data = await resp.json();
+                    console.log("📄 [VESTES] Dados recebidos:", data);
+
+                    // Adapta para diferentes formatos
+                    todasAsVestes = Array.isArray(data) ? data : (data.results || []);
+                    
+                    renderVestes(todasAsVestes);
+                } catch (error) {
+                    console.error("❌ [ERROR] Erro ao buscar vestes:", error);
+                    const tableBody = document.querySelector('#vestes-table-body');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Falha ao carregar dados. Verifique a conexão.</td></tr>';
+                    }
+                }
+            }
+
+            // ============== FILTROS ==============
+            document.addEventListener('DOMContentLoaded', () => {
+                // Busca inicial
+                fetchVestes();
+
+                // Botões de filtro
+                const filterButtons = document.querySelectorAll('.btn-group .btn');
+                filterButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        filterButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+
+                        const filterType = button.dataset.filter;
+                        let vestesFiltradas = [];
+
+                        if (filterType === 'todas') {
+                            vestesFiltradas = todasAsVestes;
+                        } else if (filterType === 'em-uso') {
+                            vestesFiltradas = todasAsVestes.filter(v => v.profile !== null);
+                        } else if (filterType === 'disponiveis') {
+                            vestesFiltradas = todasAsVestes.filter(v => v.profile === null);
+                        }
+                        
+                        renderVestes(vestesFiltradas);
+                    });
+                });
+
+                console.log("✅ [READY] Script de vestes pronto!");
+            });
+        </script>
     </body>
 </html>
