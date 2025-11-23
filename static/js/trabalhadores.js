@@ -1,24 +1,89 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log("[LOG] Script trabalhadores.js carregado");
+
   const API_BASE = "http://127.0.0.1:8000/api";
   const TABELA = document.querySelector("#workers-table-body");
   const FEEDBACK = document.querySelector("#feedback-message");
   const SEARCH_INPUT = document.querySelector("#searchInput");
 
-  // =============== 🧠 Funções auxiliares ===================
+  function getTokens() {
+    const tokens = {
+      access: localStorage.getItem("accessToken"),
+      refresh: localStorage.getItem("accessToken"),
+    };
+    console.log("[LOG] Tokens recuperados:", tokens);
+    return tokens;
+  }
 
-  // Fetch autenticado usando token JWT
-  async function fetchWithAuth(url, options = {}) {
-    const token = localStorage.getItem("access_token");
+  function logout() {
+    console.log("[LOG] Logout chamado");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("accessToken");
+    window.location.href = "/templates/login.html";
+  }
+
+  async function refreshToken() {
+    const { refresh } = getTokens();
+    console.log("[LOG] Tentando refresh token:", refresh);
+    if (!refresh) return false;
+
+    try {
+      const resp = await fetch(`${API_BASE}/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
+      console.log("[LOG] Resposta refresh token:", resp.status);
+      if (!resp.ok) return false;
+
+      const data = await resp.json();
+      console.log("[LOG] Novo access token recebido:", data.access);
+      localStorage.setItem("accessToken", data.access);
+      return true;
+    } catch (err) {
+      console.error("[LOG] Erro no refresh token:", err);
+      return false;
+    }
+  }
+
+  async function fetchWithAuth(url, options = {}, retry = true) {
+    const { access } = getTokens();
+    console.log("[LOG] FetchWithAuth chamada para:", url);
+    if (!access) {
+      console.warn("[LOG] Sem access token, logout");
+      logout();
+      return;
+    }
+
     const headers = {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${access}`,
       ...options.headers,
     };
-    const resp = await fetch(url, { ...options, headers });
+
+    let resp;
+    try {
+      resp = await fetch(url, { ...options, headers });
+      console.log("[LOG] Resposta fetch:", resp.status);
+    } catch (err) {
+      console.error("[LOG] Erro na fetch:", err);
+      throw err;
+    }
+
+    if (resp.status === 401 && retry) {
+      console.warn("[LOG] 401 recebido, tentando refresh token");
+      const ok = await refreshToken();
+      if (ok) return fetchWithAuth(url, options, false);
+
+      console.warn("[LOG] Sessão expirada após refresh");
+      logout();
+      return;
+    }
+
     return resp;
   }
 
-  // Renderiza tabela de usuários
+  // =============== Render e Eventos ===================
   function renderUsuarios(usuarios) {
     TABELA.innerHTML = "";
 
@@ -59,7 +124,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     registrarEventosAcoes();
   }
 
-  // Registra eventos dos botões de ação
   function registrarEventosAcoes() {
     document.querySelectorAll(".ver-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -85,18 +149,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Excluir usuário (soft delete)
   async function excluirUsuario(id) {
     try {
       const resp = await fetchWithAuth(`${API_BASE}/usuarios/${id}/`, {
         method: "DELETE",
       });
 
-      if (resp.ok) {
+      if (resp && resp.ok) {
         alert("Usuário excluído com sucesso!");
         await carregarUsuarios();
       } else {
-        const err = await resp.json().catch(() => ({}));
+        const err = resp ? await resp.json().catch(() => ({})) : {};
         alert("Erro ao excluir: " + (err.erro || "desconhecido"));
       }
     } catch (error) {
@@ -105,7 +168,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Filtrar usuários por texto (nome/email)
   function filtrarUsuarios(lista, termo) {
     termo = termo.toLowerCase();
     return lista.filter(
@@ -115,18 +177,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
   }
 
-  // ==================== 🚀 Lógica Principal =====================
-
+  // ==================== LÓGICA PRINCIPAL =====================
   let listaUsuarios = [];
 
   async function carregarUsuarios() {
     try {
       const resp = await fetchWithAuth(`${API_BASE}/usuarios/`);
-      if (resp.status === 401) {
-        alert("Sessão expirada. Faça login novamente.");
-        window.location.href = "/templates/login.html";
-        return;
-      }
+      if (!resp) return;
 
       if (!resp.ok) {
         const txt = await resp.text();
@@ -143,7 +200,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Evento de pesquisa
   SEARCH_INPUT.addEventListener("input", () => {
     const termo = SEARCH_INPUT.value.trim();
     const filtrados = filtrarUsuarios(listaUsuarios, termo);
