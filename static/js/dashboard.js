@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     const cardColabSemVeste = criarCardEstatistica(
-      "Colaboradores Sem Veste",
+      "Colaboradores Sem SafeVest",
       stats.colaboradoresSemVeste,
       "bi-person-x",
       "danger",

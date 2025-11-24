@@ -1,11 +1,10 @@
-// /static/js/layout.js
-
 // 1. A "RECEITA" DO MENU: Um único lugar para definir os links
 const menuItems = [
     { href: "/index.html", icon: "bi-house", text: "Homepage" },
     { href: "/templates/trabalhadores.html", icon: "bi-people", text: "Trabalhadores" },
     { href: "/templates/vestes.html", icon: "bi-clipboard-heart", text: "SafeVests" },
-    { href: "/templates/configuracoes.html", icon: "bi-gear", text: "Configurações" },
+    { href: "/templates/associar-veste.html", icon: "bi-check-lg", text: "Associar Vestes" },
+    { href: "/templates/ajuda.html", icon: "bi-question-lg", text: "Ajuda" },
     { href: "/templates/login.html", icon: "bi-box-arrow-left", text: "Logout" },
 ];
 
