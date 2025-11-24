@@ -111,6 +111,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     return { texto: "Seguro", classe: "success", icone: "bi-check-circle-fill" };
   }
 
+  // ============== FUNÇÕES SEGURAS PARA NÚMEROS ==============
+  function safeNumber(value, defaultValue = null) {
+    if (value === null || value === undefined || value === '') return defaultValue;
+    const num = parseFloat(value);
+    return isNaN(num) ? defaultValue : num;
+  }
+
+  function safeToFixed(value, decimals = 1, defaultValue = '--') {
+    const num = safeNumber(value);
+    return num !== null ? num.toFixed(decimals) : defaultValue;
+  }
+
+  function formatBateria(value) {
+    const num = safeNumber(value);
+    if (num === null) return '--';
+    return `${num.toFixed(1)}%`;
+  }
+
   // ============== BUSCAR ÚLTIMA LEITURA ==============
   async function buscarUltimaLeitura(vesteId) {
     try {
@@ -120,7 +138,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       const data = await resp.json();
       const leituras = Array.isArray(data) ? data : (data.results || []);
       
-      return leituras.length > 0 ? leituras[0] : null;
+      // Garantir que os campos numéricos sejam números
+      if (leituras.length > 0) {
+        const leitura = leituras[0];
+        return {
+          ...leitura,
+          batimento: safeNumber(leitura.batimento),
+          temperatura_A: safeNumber(leitura.temperatura_A),
+          temperatura_C: safeNumber(leitura.temperatura_C),
+          nivel_co: safeNumber(leitura.nivel_co),
+          nivel_bateria: safeNumber(leitura.nivel_bateria)
+        };
+      }
+      
+      return null;
     } catch (err) {
       console.error("[DETALHES] Erro ao buscar leitura:", err);
       return null;
@@ -141,7 +172,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Atualiza batimento
     const batimentoEl = document.getElementById("sensor-batimento");
     if (batimentoEl) {
-      const batimentoNovo = ultimaLeitura.batimento || '--';
+      const batimentoNovo = ultimaLeitura.batimento !== null ? ultimaLeitura.batimento : '--';
       if (batimentoEl.textContent !== batimentoNovo.toString()) {
         batimentoEl.textContent = batimentoNovo;
         batimentoEl.classList.add('atualizado');
@@ -152,7 +183,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Atualiza temperatura
     const temperaturaEl = document.getElementById("sensor-temperatura");
     if (temperaturaEl) {
-      const tempNova = ultimaLeitura.temperatura_A || ultimaLeitura.temperatura_C || '--';
+      const tempNova = ultimaLeitura.temperatura_A !== null ? ultimaLeitura.temperatura_A : 
+                      ultimaLeitura.temperatura_C !== null ? ultimaLeitura.temperatura_C : '--';
       if (temperaturaEl.textContent !== tempNova.toString()) {
         temperaturaEl.textContent = tempNova;
         temperaturaEl.classList.add('atualizado');
@@ -163,7 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Atualiza CO
     const coEl = document.getElementById("sensor-co");
     if (coEl) {
-      const coNovo = ultimaLeitura.nivel_co || '--';
+      const coNovo = ultimaLeitura.nivel_co !== null ? ultimaLeitura.nivel_co : '--';
       if (coEl.textContent !== coNovo.toString()) {
         coEl.textContent = coNovo;
         coEl.classList.add('atualizado');
@@ -174,7 +206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Atualiza bateria
     const bateriaEl = document.getElementById("sensor-bateria");
     if (bateriaEl) {
-      const bateriaNova = ultimaLeitura.nivel_bateria ? `${ultimaLeitura.nivel_bateria.toFixed(1)}%` : '--';
+      const bateriaNova = formatBateria(ultimaLeitura.nivel_bateria);
       if (bateriaEl.textContent !== bateriaNova) {
         bateriaEl.textContent = bateriaNova;
         bateriaEl.classList.add('atualizado');
@@ -217,7 +249,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               </div>
             </div>
             <div class="col">
-              <h2 class="mb-1">${usuario.nome || usuario.username}</h2>
+              <h2 class="mb-1">${usuario.nome || usuario.username || 'Usuário'}</h2>
               <p class="text-muted mb-2">
                 <i class="bi bi-envelope me-2"></i>${usuario.email || "Email não cadastrado"}
               </p>
@@ -276,7 +308,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (respVestes && respVestes.ok) {
         const vestes = await respVestes.json();
         const vestesArray = Array.isArray(vestes) ? vestes : (vestes.results || []);
-        vesteData = vestesArray.find(v => v.profile?.user === usuario.id);
+        
+        // Busca veste associada ao usuário atual
+        vesteData = vestesArray.find(v => {
+          if (!v.profile) return false;
+          
+          // Formato 1: profile é um ID direto
+          if (typeof v.profile === 'number') {
+            return v.profile === usuario.id;
+          }
+          
+          // Formato 2: profile.user é um ID
+          if (typeof v.profile.user === 'number') {
+            return v.profile.user === usuario.id;
+          }
+          
+          // Formato 3: profile.user é um objeto com id
+          if (v.profile.user?.id) {
+            return v.profile.user.id === usuario.id;
+          }
+          
+          return false;
+        });
+        
+        console.log("[DETALHES] Vestes encontradas:", vestesArray.length);
+        console.log("[DETALHES] Veste do operador:", vesteData);
       }
     } catch (err) {
       console.error("[DETALHES] Erro ao buscar veste:", err);
@@ -299,6 +355,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.1); color: #dc3545; }
         }
+        .sensor-card {
+          transition: all 0.3s ease;
+        }
+        .sensor-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
       </style>
       
       <!-- Status da Veste -->
@@ -314,7 +377,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           ${vesteData ? `
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
-                <h5 class="mb-1">Número de Série: <strong>${vesteData.numero_de_serie}</strong></h5>
+                <h5 class="mb-1">Número de Série: <strong>${vesteData.numero_de_serie || 'N/A'}</strong></h5>
                 <p class="text-muted mb-0">ID da Veste: ${vesteData.id}</p>
               </div>
               <div>
@@ -349,37 +412,38 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="card-body">
             <div class="row text-center">
               <div class="col-md-3 mb-3">
-                <div class="card border-danger">
+                <div class="card border-danger sensor-card">
                   <div class="card-body">
                     <i class="bi bi-heart-pulse-fill text-danger fs-1"></i>
-                    <h3 id="sensor-batimento" class="mt-2 mb-0">${ultimaLeitura.batimento || '--'}</h3>
+                    <h3 id="sensor-batimento" class="mt-2 mb-0">${ultimaLeitura.batimento !== null ? ultimaLeitura.batimento : '--'}</h3>
                     <p class="text-muted">BPM</p>
                   </div>
                 </div>
               </div>
               <div class="col-md-3 mb-3">
-                <div class="card border-info">
+                <div class="card border-info sensor-card">
                   <div class="card-body">
                     <i class="bi bi-thermometer-half text-info fs-1"></i>
-                    <h3 id="sensor-temperatura" class="mt-2 mb-0">${ultimaLeitura.temperatura_A || ultimaLeitura.temperatura_C || '--'}</h3>
+                    <h3 id="sensor-temperatura" class="mt-2 mb-0">${ultimaLeitura.temperatura_A !== null ? ultimaLeitura.temperatura_A : 
+                      ultimaLeitura.temperatura_C !== null ? ultimaLeitura.temperatura_C : '--'}</h3>
                     <p class="text-muted">°C</p>
                   </div>
                 </div>
               </div>
               <div class="col-md-3 mb-3">
-                <div class="card border-warning">
+                <div class="card border-warning sensor-card">
                   <div class="card-body">
                     <i class="bi bi-wind text-warning fs-1"></i>
-                    <h3 id="sensor-co" class="mt-2 mb-0">${ultimaLeitura.nivel_co || '--'}</h3>
+                    <h3 id="sensor-co" class="mt-2 mb-0">${ultimaLeitura.nivel_co !== null ? ultimaLeitura.nivel_co : '--'}</h3>
                     <p class="text-muted">CO ppm</p>
                   </div>
                 </div>
               </div>
               <div class="col-md-3 mb-3">
-                <div class="card border-success">
+                <div class="card border-success sensor-card">
                   <div class="card-body">
                     <i class="bi bi-battery-charging text-success fs-1"></i>
-                    <h3 id="sensor-bateria" class="mt-2 mb-0">${ultimaLeitura.nivel_bateria ? ultimaLeitura.nivel_bateria.toFixed(1) + '%' : '--'}</h3>
+                    <h3 id="sensor-bateria" class="mt-2 mb-0">${formatBateria(ultimaLeitura.nivel_bateria)}</h3>
                     <p class="text-muted">Bateria</p>
                   </div>
                 </div>
@@ -430,12 +494,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else if (tipo === "operador") {
         html += await renderDadosOperador(usuario);
         
-        // ============== INICIA POLLING ==============
+        // Inicia polling se houver veste associada
         if (vesteIdAtual) {
           console.log("[DETALHES] Iniciando polling a cada 5 segundos...");
           intervalId = setInterval(() => {
             atualizarDadosSensor(vesteIdAtual);
-          }, 5000); // Atualiza a cada 5 segundos
+          }, 5000);
         }
       }
 
