@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeVest - Associar Veste</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="d-flex" id="wrapper">
+        <div id="sidebar-wrapper"></div>
+        <div id="page-content-wrapper">
+            <!-- Navbar -->
+            <nav class="d-flex align-items-center justify-content-between bg-danger text-white p-3 shadow-sm">
+                <div class="d-flex gap-3 align-items-center">
+                    <a href="#" class="text-white fs-4" id="menu-toggle">
+                        <i class="bi bi-list"></i>
+                    </a>
+                    <span class="fs-5 fw-bold">Associar SafeVest</span>
+                </div>
+                <a href="/templates/vestes.html" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
+                </a>
+            </nav>
+
+            <!-- Main -->
+            <main class="container-fluid my-4">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
+                                <h5 class="card-title mb-3">
+                                    <i class="bi bi-link-45deg me-2"></i>
+                                    Associar SafeVest a Operador
+                                </h5>
+                                <p class="card-text text-muted mb-4">
+                                    Vincule uma SafeVest disponível a um operador sem veste. Apenas vestes ativas e operadores ativos podem ser associados.
+                                </p>
+
+                                <form id="form-associar">
+                                    <!-- Select de Veste -->
+                                    <div class="mb-4">
+                                        <label for="veste-select" class="form-label fw-semibold">
+                                            <i class="bi bi-shield-check text-success me-2"></i>
+                                            SafeVest Disponível *
+                                        </label>
+                                        <select class="form-select form-select-lg" id="veste-select" required>
+                                            <option value="">Carregando vestes...</option>
+                                        </select>
+                                        <small class="form-text text-muted">
+                                            Apenas vestes ativas e sem associação aparecem aqui.
+                                        </small>
+                                    </div>
+
+                                    <!-- Select de Operador -->
+                                    <div class="mb-4">
+                                        <label for="operador-select" class="form-label fw-semibold">
+                                            <i class="bi bi-person-check text-primary me-2"></i>
+                                            Operador Disponível *
+                                        </label>
+                                        <select class="form-select form-select-lg" id="operador-select" required>
+                                            <option value="">Carregando operadores...</option>
+                                        </select>
+                                        <small class="form-text text-muted">
+                                            Apenas operadores ativos e sem veste aparecem aqui.
+                                        </small>
+                                    </div>
+
+                                    <!-- Preview -->
+                                    <div id="preview-card" class="alert alert-info d-none">
+                                        <h6 class="alert-heading">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            Preview da Associação
+                                        </h6>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>SafeVest:</strong>
+                                                <p class="mb-0" id="preview-veste">—</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Operador:</strong>
+                                                <p class="mb-0" id="preview-operador">—</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Feedback -->
+                                    <div id="feedback-alert" class="alert d-none" role="alert"></div>
+
+                                    <!-- Botões -->
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <a href="/templates/vestes.html" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-danger btn-lg">
+                                            <span class="spinner-border spinner-border-sm d-none" id="spinner"></span>
+                                            <i class="bi bi-link-45deg me-1"></i>
+                                            <span id="btn-text">Associar</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Histórico de Associações Recentes -->
+                        <div class="card shadow-sm mt-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-clock-history me-2"></i>
+                                    Últimas Associações
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="historico-container">
+                                    <p class="text-muted text-center mb-0">Nenhuma associação ainda.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/layout.js"></script>
+
+    <script>
+        console.log("🟢 [ASSOCIAR] Script carregado");
+
+        const API_BASE = "http://127.0.0.1:8000/api";
+        let historico = [];
+
+        // ============== AUTENTICAÇÃO ==============
+        function getTokens() {
+            return {
+                access: localStorage.getItem("accessToken"),
+                refresh: localStorage.getItem("refreshToken"),
+            };
+        }
+
+        function logout() {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            window.location.href = "/templates/login.html";
+        }
+
+        async function refreshToken() {
+            const { refresh } = getTokens();
+            if (!refresh) return false;
+
+            try {
+                const resp = await fetch(`${API_BASE}/token/refresh/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ refresh }),
+                });
+
+                if (!resp.ok) return false;
+
+                const data = await resp.json();
+                localStorage.setItem("accessToken", data.access);
+                return true;
+            } catch (err) {
+                console.error("❌ [AUTH] Erro:", err);
+                return false;
+            }
+        }
+
+        async function fetchWithAuth(url, options = {}, retry = true) {
+            const { access } = getTokens();
+
+            if (!access) {
+                alert("Sessão expirada. Faça login novamente.");
+                logout();
+                return null;
+            }
+
+            const headers = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${access}`,
+                ...options.headers,
+            };
+
+            try {
+                const resp = await fetch(url, { ...options, headers });
+
+                if (resp.status === 401 && retry) {
+                    const renovado = await refreshToken();
+                    if (renovado) return fetchWithAuth(url, options, false);
+                    logout();
+                    return null;
+                }
+
+                return resp;
+            } catch (err) {
+                console.error("💥 [FETCH] Erro:", err);
+                throw err;
+            }
+        }
+
+        // ============== UTILITÁRIOS ==============
+        function showAlert(message, type = "warning") {
+            const feedback = document.getElementById("feedback-alert");
+            feedback.textContent = message;
+            feedback.className = `alert alert-${type}`;
+            feedback.classList.remove("d-none");
+        }
+
+        function hideAlert() {
+            document.getElementById("feedback-alert").classList.add("d-none");
+        }
+
+        function updatePreview() {
+            const vesteSelect = document.getElementById("veste-select");
+            const operadorSelect = document.getElementById("operador-select");
+            const previewCard = document.getElementById("preview-card");
+            const previewVeste = document.getElementById("preview-veste");
+            const previewOperador = document.getElementById("preview-operador");
+
+            if (vesteSelect.value && operadorSelect.value) {
+                const vesteText = vesteSelect.options[vesteSelect.selectedIndex].text;
+                const operadorText = operadorSelect.options[operadorSelect.selectedIndex].text;
+
+                previewVeste.textContent = vesteText;
+                previewOperador.textContent = operadorText;
+                previewCard.classList.remove("d-none");
+            } else {
+                previewCard.classList.add("d-none");
+            }
+        }
+
+        function renderHistorico() {
+            const container = document.getElementById("historico-container");
+            
+            if (historico.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center mb-0">Nenhuma associação ainda.</p>';
+                return;
+            }
+
+            container.innerHTML = historico.map((item, index) => `
+                <div class="d-flex justify-content-between align-items-center py-2 ${index > 0 ? 'border-top' : ''}">
+                    <div>
+                        <i class="bi bi-shield-check text-success me-2"></i>
+                        <strong>${item.veste}</strong>
+                        <i class="bi bi-arrow-right mx-2"></i>
+                        <i class="bi bi-person text-primary me-2"></i>
+                        ${item.operador}
+                    </div>
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Concluído
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // ============== CARREGAR DADOS ==============
+        async function carregarVestesDisponiveis() {
+            try {
+                const resp = await fetchWithAuth(`${API_BASE}/veste/`);
+                if (!resp || !resp.ok) throw new Error("Erro ao buscar vestes");
+
+                const data = await resp.json();
+                const vestes = Array.isArray(data) ? data : (data.results || []);
+
+                // Filtra apenas ativas e sem profile
+                const disponiveis = vestes.filter(v => v.status === 'ativa' && !v.profile);
+
+                const select = document.getElementById("veste-select");
+                
+                if (disponiveis.length === 0) {
+                    select.innerHTML = '<option value="">Nenhuma veste disponível</option>';
+                    return;
+                }
+
+                select.innerHTML = '<option value="">Selecione uma veste...</option>' +
+                    disponiveis.map(v => 
+                        `<option value="${v.id}">${v.numero_de_serie}</option>`
+                    ).join('');
+
+            } catch (error) {
+                console.error("[ASSOCIAR] Erro ao carregar vestes:", error);
+                document.getElementById("veste-select").innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        async function carregarOperadoresDisponiveis() {
+            try {
+                const resp = await fetchWithAuth(`${API_BASE}/usuarios/`);
+                if (!resp || !resp.ok) throw new Error("Erro ao buscar operadores");
+
+                const data = await resp.json();
+                const usuarios = data.usuarios || data.results || [];
+
+                // Filtra apenas operadores ativos
+                const operadores = usuarios.filter(u => {
+                    const funcao = u.funcao || (u.groups && u.groups[0]);
+                    return funcao === 'Operador' && u.ativo !== false;
+                });
+
+                // Busca vestes para ver quem já tem
+                const respVestes = await fetchWithAuth(`${API_BASE}/veste/`);
+                const dataVestes = await respVestes.json();
+                const vestes = Array.isArray(dataVestes) ? dataVestes : (dataVestes.results || []);
+
+                // IDs de usuários que já têm veste
+                const usuariosComVeste = vestes
+                    .filter(v => v.profile)
+                    .map(v => v.profile.user);
+
+                // Filtra operadores SEM veste
+                const disponiveis = operadores.filter(op => !usuariosComVeste.includes(op.id));
+
+                const select = document.getElementById("operador-select");
+                
+                if (disponiveis.length === 0) {
+                    select.innerHTML = '<option value="">Nenhum operador disponível</option>';
+                    return;
+                }
+
+                select.innerHTML = '<option value="">Selecione um operador...</option>' +
+                    disponiveis.map(op => 
+                        `<option value="${op.id}">${op.nome || op.email}</option>`
+                    ).join('');
+
+            } catch (error) {
+                console.error("[ASSOCIAR] Erro ao carregar operadores:", error);
+                document.getElementById("operador-select").innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        // ============== SUBMIT ==============
+        document.addEventListener("DOMContentLoaded", async () => {
+            await carregarVestesDisponiveis();
+            await carregarOperadoresDisponiveis();
+
+            // Preview ao mudar selects
+            document.getElementById("veste-select").addEventListener("change", updatePreview);
+            document.getElementById("operador-select").addEventListener("change", updatePreview);
+
+            // Submit
+            const form = document.getElementById("form-associar");
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                console.log("[SUBMIT] Formulário enviado");
+                hideAlert();
+
+                const vesteId = document.getElementById("veste-select").value;
+                const operadorId = document.getElementById("operador-select").value;
+
+                if (!vesteId || !operadorId) {
+                    return showAlert("Selecione uma veste e um operador.", "warning");
+                }
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const spinner = document.getElementById("spinner");
+                const btnText = document.getElementById("btn-text");
+
+                submitBtn.disabled = true;
+                spinner.classList.remove("d-none");
+                btnText.textContent = "Associando...";
+
+                try {
+                    // PATCH na veste para adicionar o profile
+                    const resp = await fetchWithAuth(`${API_BASE}/veste/${vesteId}/`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ profile: operadorId })
+                    });
+
+                    if (!resp || !resp.ok) {
+                        const error = await resp.json().catch(() => ({}));
+                        throw new Error(error.erro || "Erro ao associar");
+                    }
+
+                    // Sucesso!
+                    const vesteText = document.getElementById("veste-select").options[document.getElementById("veste-select").selectedIndex].text;
+                    const operadorText = document.getElementById("operador-select").options[document.getElementById("operador-select").selectedIndex].text;
+
+                    historico.unshift({ veste: vesteText, operador: operadorText });
+                    renderHistorico();
+
+                    showAlert("Veste associada com sucesso!", "success");
+                    form.reset();
+                    document.getElementById("preview-card").classList.add("d-none");
+
+                    // Recarrega listas
+                    await carregarVestesDisponiveis();
+                    await carregarOperadoresDisponiveis();
+
+                } catch (error) {
+                    console.error("[ASSOCIAR] Erro:", error);
+                    showAlert(error.message, "danger");
+                } finally {
+                    submitBtn.disabled = false;
+                    spinner.classList.add("d-none");
+                    btnText.textContent = "Associar";
+                }
+            });
+
+            console.log("✅ [READY] Script pronto!");
+        });
+    </script>
+</body>
+</html>

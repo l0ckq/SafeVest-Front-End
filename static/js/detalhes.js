@@ -414,7 +414,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="alert alert-danger">
           <h4><i class="bi bi-exclamation-triangle me-2"></i>Erro ao Carregar Dados</h4>
           <p>${error.message}</p>
-          <a href="/templates/index.html" class="btn btn-danger mt-2">
+          <a href="/index.html" class="btn btn-danger mt-2">
             <i class="bi bi-arrow-left me-1"></i>Voltar ao Dashboard
           </a>
         </div>

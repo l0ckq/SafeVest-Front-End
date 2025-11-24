@@ -151,10 +151,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function excluirUsuario(id) {
     try {
-      const resp = await fetchWithAuth(`${API_BASE}/usuarios/${id}/`, {
+      const resp = await fetchWithAuth(`${API_BASE}/usuarios/delete/${id}/`, {
         method: "DELETE",
       });
-
       if (resp && resp.ok) {
         alert("Usuário excluído com sucesso!");
         await carregarUsuarios();
