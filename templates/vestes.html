@@ -40,7 +40,6 @@
                             <span class="text-muted" id="contador-vestes">Carregando...</span>
                         </div>
                     </div>
-
                     <!-- Tabela -->
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
@@ -67,306 +66,329 @@
                 </main>
             </div>
         </div>
-
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
         <script src="/static/js/layout.js"></script>
-
         <script>
             console.log("🟢 [VESTES] Script carregado");
-
-            const API_BASE = "http://127.0.0.1:8000/api";
-            let todasAsVestes = [];
-
-            // ============== AUTENTICAÇÃO ==============
-            function getTokens() {
-                return {
-                    access: localStorage.getItem("accessToken"),
-                    refresh: localStorage.getItem("refreshToken"),
-                };
-            }
-
-            function logout() {
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-                window.location.href = "/templates/login.html";
-            }
-
-            async function refreshToken() {
-                const { refresh } = getTokens();
-                if (!refresh) return false;
-
-                try {
-                    const resp = await fetch(`${API_BASE}/token/refresh/`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ refresh }),
-                    });
-
-                    if (!resp.ok) return false;
-
-                    const data = await resp.json();
-                    localStorage.setItem("accessToken", data.access);
-                    return true;
-                } catch (err) {
-                    console.error("❌ [AUTH] Erro ao renovar token:", err);
-                    return false;
+            
+                const API_BASE = "http://127.0.0.1:8000/api";
+                let todasAsVestes = [];
+            
+                // ============== AUTENTICAÇÃO ==============
+                function getTokens() {
+                    return {
+                        access: localStorage.getItem("accessToken"),
+                        refresh: localStorage.getItem("refreshToken"),
+                    };
                 }
-            }
-
-            async function fetchWithAuth(url, options = {}, retry = true) {
-                const { access } = getTokens();
-
-                if (!access) {
-                    alert("Sessão expirada. Faça login novamente.");
-                    logout();
-                    return null;
+            
+                function logout() {
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    window.location.href = "/templates/login.html";
                 }
-
-                const headers = {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${access}`,
-                    ...options.headers,
-                };
-
-                try {
-                    const resp = await fetch(url, { ...options, headers });
-
-                    if (resp.status === 401 && retry) {
-                        const renovado = await refreshToken();
-                        if (renovado) return fetchWithAuth(url, options, false);
+            
+                async function refreshToken() {
+                    const { refresh } = getTokens();
+                    if (!refresh) return false;
+            
+                    try {
+                        const resp = await fetch(`${API_BASE}/token/refresh/`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ refresh }),
+                        });
+            
+                        if (!resp.ok) return false;
+            
+                        const data = await resp.json();
+                        localStorage.setItem("accessToken", data.access);
+                        return true;
+                    } catch (err) {
+                        console.error("❌ [AUTH] Erro ao renovar token:", err);
+                        return false;
+                    }
+                }
+            
+                async function fetchWithAuth(url, options = {}, retry = true) {
+                    const { access } = getTokens();
+            
+                    if (!access) {
+                        alert("Sessão expirada. Faça login novamente.");
                         logout();
                         return null;
                     }
-
-                    return resp;
-                } catch (err) {
-                    console.error("💥 [FETCH] Erro:", err);
-                    throw err;
-                }
-            }
-
-            // ============== RENDERIZAÇÃO ==============
-            function renderVestes(listaDeVestes) {
-                const tableBody = document.querySelector('#vestes-table-body');
-                const contador = document.querySelector('#contador-vestes');
-
-                if (!tableBody) return;
-                tableBody.innerHTML = '';
-
-                // Atualiza contador
-                contador.textContent = `${listaDeVestes.length} veste(s) encontrada(s)`;
-
-                if (listaDeVestes.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nenhuma veste encontrada.</td></tr>';
-                    return;
-                }
-
-                listaDeVestes.forEach(veste => {
-                    const row = document.createElement('tr');
-                    
-                    // Verifica status e associação
-                    const estaAtiva = veste.status === 'ativa';
-                    const temProfile = veste.profile && veste.profile !== null;
-                    const estaDisponivel = estaAtiva && !temProfile;
-                    
-                    // Badge de status da veste (ativa/inativa)
-                    const statusVeste = estaAtiva
-                        ? '<span class="badge bg-success">Ativa</span>' 
-                        : '<span class="badge bg-secondary">Inativa</span>';
-                    
-                    // Badge de disponibilidade (lógica corrigida)
-                    let statusAssociacao;
-                    if (!estaAtiva) {
-                        // Se inativa, sempre indisponível
-                        statusAssociacao = '<span class="badge bg-danger">Indisponível</span>';
-                    } else if (temProfile) {
-                        // Se ativa e tem profile, em uso
-                        statusAssociacao = '<span class="badge bg-primary">Em Uso</span>';
-                    } else {
-                        // Se ativa e sem profile, disponível
-                        statusAssociacao = '<span class="badge bg-success">Disponível</span>';
-                    }
-                    
-                    // Nome do usuário
-                    let nomeUsuario = '<span class="text-muted">—</span>';
-                    if (temProfile) {
-                        if (veste.profile.user) {
-                            nomeUsuario = veste.profile.user.first_name || veste.profile.user.username || 'Usuário';
-                        } else if (veste.profile.nome) {
-                            nomeUsuario = veste.profile.nome;
+            
+                    const headers = {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${access}`,
+                        ...options.headers,
+                    };
+            
+                    try {
+                        const resp = await fetch(url, { ...options, headers });
+            
+                        if (resp.status === 401 && retry) {
+                            const renovado = await refreshToken();
+                            if (renovado) return fetchWithAuth(url, options, false);
+                            logout();
+                            return null;
                         }
+            
+                        return resp;
+                    } catch (err) {
+                        console.error("💥 [FETCH] Erro:", err);
+                        throw err;
                     }
-
-                    row.innerHTML = `
-                        <td class="fw-bold font-monospace">${veste.numero_de_serie}</td>
-                        <td>${statusVeste}</td>
-                        <td>${statusAssociacao}</td>
-                        <td>${nomeUsuario}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm" role="group">
-                                ${estaDisponivel ? `
-                                    <button class="btn btn-outline-primary associar-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Associar usuário">
-                                        <i class="bi bi-person-plus"></i>
-                                    </button>
-                                ` : temProfile && estaAtiva ? `
-                                    <button class="btn btn-outline-warning desassociar-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Desassociar usuário">
-                                        <i class="bi bi-person-dash"></i>
-                                    </button>
-                                ` : `
-                                    <button class="btn btn-outline-secondary" disabled title="Indisponível para associação">
-                                        <i class="bi bi-slash-circle"></i>
-                                    </button>
-                                `}
-                                <button class="btn btn-outline-danger excluir-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Excluir veste">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-
-                // Registra eventos
-                registrarEventos();
-            }
-
-            function registrarEventos() {
-                // Botões de associar
-                document.querySelectorAll('.associar-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        const serial = btn.dataset.serial;
-                        window.location.href = `/templates/associar-veste.html?id=${id}&serial=${serial}`;
-                    });
-                });
-
-                // Botões de desassociar
-                document.querySelectorAll('.desassociar-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const id = btn.dataset.id;
-                        const serial = btn.dataset.serial;
-                        if (confirm(`Desassociar veste ${serial}?`)) {
-                            await desassociarVeste(id);
-                        }
-                    });
-                });
-
-                // Botões de excluir
-                document.querySelectorAll('.excluir-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const id = btn.dataset.id;
-                        const serial = btn.dataset.serial;
-                        if (confirm(`Tem certeza que deseja EXCLUIR a veste ${serial}?`)) {
-                            await excluirVeste(id);
-                        }
-                    });
-                });
-            }
-
-            // ============== AÇÕES ==============
-            async function desassociarVeste(id) {
-                try {
-                    const resp = await fetchWithAuth(`${API_BASE}/veste/${id}/`, {
-                        method: 'PATCH',
-                        body: JSON.stringify({ profile: null })
-                    });
-
-                    if (resp && resp.ok) {
-                        alert('Veste desassociada com sucesso!');
-                        fetchVestes();
-                    } else {
-                        alert('Erro ao desassociar veste.');
-                    }
-                } catch (error) {
-                    console.error('Erro ao desassociar:', error);
-                    alert('Erro de rede.');
                 }
-            }
-
-            async function excluirVeste(id) {
-                try {
-                    const resp = await fetchWithAuth(`${API_BASE}/veste/${id}/`, {
-                        method: 'DELETE'
-                    });
-
-                    if (resp && resp.ok) {
-                        alert('Veste excluída com sucesso!');
-                        fetchVestes();
-                    } else {
-                        alert('Erro ao excluir veste.');
-                    }
-                } catch (error) {
-                    console.error('Erro ao excluir:', error);
-                    alert('Erro de rede.');
-                }
-            }
-
-            // ============== BUSCAR VESTES ==============
-            async function fetchVestes() {
-                try {
-                    console.log("📡 [FETCH] Buscando vestes...");
-                    const resp = await fetchWithAuth(`${API_BASE}/veste/`);
-
-                    if (!resp || !resp.ok) {
-                        throw new Error('Erro ao buscar vestes');
-                    }
-
-                    const data = await resp.json();
-                    console.log("📄 [VESTES] Dados recebidos:", data);
-
-                    // Adapta para diferentes formatos
-                    todasAsVestes = Array.isArray(data) ? data : (data.results || []);
-                    
-                    renderVestes(todasAsVestes);
-                } catch (error) {
-                    console.error("❌ [ERROR] Erro ao buscar vestes:", error);
+            
+                // ============== RENDERIZAÇÃO ==============
+                function renderVestes(listaDeVestes) {
                     const tableBody = document.querySelector('#vestes-table-body');
-                    if (tableBody) {
-                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Falha ao carregar dados. Verifique a conexão.</td></tr>';
+                    const contador = document.querySelector('#contador-vestes');
+            
+                    if (!tableBody) return;
+                    tableBody.innerHTML = '';
+            
+                    // Atualiza contador
+                    contador.textContent = `${listaDeVestes.length} veste(s) encontrada(s)`;
+            
+                    if (listaDeVestes.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nenhuma veste encontrada.</td></tr>';
+                        return;
                     }
-                }
-            }
-
-            // ============== FILTROS ==============
-            document.addEventListener('DOMContentLoaded', () => {
-                // Busca inicial
-                fetchVestes();
-
-                // Botões de filtro
-                const filterButtons = document.querySelectorAll('.btn-group .btn');
-                filterButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        filterButtons.forEach(btn => btn.classList.remove('active'));
-                        button.classList.add('active');
-
-                        const filterType = button.dataset.filter;
-                        let vestesFiltradas = [];
-
-                        if (filterType === 'todas') {
-                            vestesFiltradas = todasAsVestes;
-                        } else if (filterType === 'disponiveis') {
-                            // Disponíveis: ativas E sem profile
-                            vestesFiltradas = todasAsVestes.filter(v => 
-                                v.status === 'ativa' && v.profile === null
-                            );
-                        } else if (filterType === 'em-uso') {
-                            // Em uso: ativas E com profile
-                            vestesFiltradas = todasAsVestes.filter(v => 
-                                v.status === 'ativa' && v.profile !== null
-                            );
-                        } else if (filterType === 'indisponiveis') {
-                            // Indisponíveis: inativas (com ou sem profile)
-                            vestesFiltradas = todasAsVestes.filter(v => 
-                                v.status === 'inativo'
-                            );
+            
+                    listaDeVestes.forEach(veste => {
+                        const row = document.createElement('tr');
+                        
+                        // Verifica status e associação
+                        const estaAtiva = veste.status === 'ativa';
+                        const temProfile = veste.profile && veste.profile !== null;
+                        const estaDisponivel = estaAtiva && !temProfile;
+                        
+                        // Badge de status da veste (ativa/inativa)
+                        const statusVeste = estaAtiva
+                            ? '<span class="badge bg-success">Ativa</span>' 
+                            : '<span class="badge bg-secondary">Inativa</span>';
+                        
+                        // Badge de disponibilidade (lógica corrigida)
+                        let statusAssociacao;
+                        if (!estaAtiva) {
+                            // Se inativa, sempre indisponível
+                            statusAssociacao = '<span class="badge bg-danger">Indisponível</span>';
+                        } else if (temProfile) {
+                            // Se ativa e tem profile, em uso
+                            statusAssociacao = '<span class="badge bg-primary">Em Uso</span>';
+                        } else {
+                            // Se ativa e sem profile, disponível
+                            statusAssociacao = '<span class="badge bg-success">Disponível</span>';
                         }
                         
-                        renderVestes(vestesFiltradas);
+                        // Nome do usuário
+                        let nomeUsuario = '<span class="text-muted">—</span>';
+                        if (temProfile) {
+                            if (veste.profile.user) {
+                                nomeUsuario = veste.profile.user.first_name || veste.profile.user.username || 'Usuário';
+                            } else if (veste.profile.nome) {
+                                nomeUsuario = veste.profile.nome;
+                            }
+                        }
+            
+                        row.innerHTML = `
+                            <td class="fw-bold font-monospace">${veste.numero_de_serie}</td>
+                            <td>${statusVeste}</td>
+                            <td>${statusAssociacao}</td>
+                            <td>${nomeUsuario}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    ${estaDisponivel ? `
+                                        <button class="btn btn-outline-primary associar-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Associar usuário">
+                                            <i class="bi bi-person-plus"></i>
+                                        </button>
+                                    ` : temProfile && estaAtiva ? `
+                                        <button class="btn btn-outline-warning desassociar-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Desassociar usuário">
+                                            <i class="bi bi-person-dash"></i>
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-outline-secondary" disabled title="Indisponível para associação">
+                                            <i class="bi bi-slash-circle"></i>
+                                        </button>
+                                    `}
+                                    <button class="btn btn-outline-danger excluir-btn" data-id="${veste.id}" data-serial="${veste.numero_de_serie}" title="Excluir veste">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
                     });
-                });
-
-                console.log("✅ [READY] Script de vestes pronto!");
+            
+                    // Registra eventos
+                    registrarEventos();
+                }
+            
+                function registrarEventos() {
+                    // Botões de associar
+                    document.querySelectorAll('.associar-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const id = btn.dataset.id;
+                            const serial = btn.dataset.serial;
+                            window.location.href = `/templates/associar-veste.html?id=${id}&serial=${serial}`;
+                        });
+                    });
+            
+                    // Botões de desassociar
+                    document.querySelectorAll('.desassociar-btn').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const id = btn.dataset.id;
+                            const serial = btn.dataset.serial;
+                            if (confirm(`Desassociar veste ${serial}?`)) {
+                                await desassociarVeste(id);
+                            }
+                        });
+                    });
+            
+                    // Botões de excluir
+                    document.querySelectorAll('.excluir-btn').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const id = btn.dataset.id;
+                            const serial = btn.dataset.serial;
+                            if (confirm(`Tem certeza que deseja EXCLUIR a veste ${serial}?`)) {
+                                await excluirVeste(id);
+                            }
+                        });
+                    });
+                }
+            
+                // ============== AÇÕES ==============
+                async function desassociarVeste(id) {
+            if (!confirm('Tem certeza que deseja desassociar esta veste?')) {
+            return;
+            }
+            
+            try {
+            const submitBtn = event.target;
+            const originalText = submitBtn.innerHTML;
+            
+            // Feedback visual
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Desassociando...';
+            
+            const resp = await fetchWithAuth(`${API_BASE}/vestes/desassociar/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
             });
+            
+            if (!resp) {
+                throw new Error('Sem resposta do servidor');
+            }
+            
+            const data = await resp.json();
+            
+            if (resp.ok) {
+                alert('✅ ' + (data.mensagem || 'Veste desassociada com sucesso!'));
+                fetchVestes(); // Recarrega a lista
+            } else {
+                throw new Error(data.erro || `Erro ${resp.status}: ${resp.statusText}`);
+            }
+            
+            } catch (error) {
+            console.error('Erro ao desassociar:', error);
+            alert('❌ ' + error.message);
+            } finally {
+            // Restaura o botão
+            const submitBtn = event.target;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            }
+            }
+                async function excluirVeste(id) {
+                    try {
+                        const resp = await fetchWithAuth(`${API_BASE}/veste/${id}/`, {
+                            method: 'DELETE'
+                        });
+            
+                        if (resp && resp.ok) {
+                            alert('Veste excluída com sucesso!');
+                            fetchVestes();
+                        } else {
+                            alert('Erro ao excluir veste.');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao excluir:', error);
+                        alert('Erro de rede.');
+                    }
+                }
+            
+                // ============== BUSCAR VESTES ==============
+                async function fetchVestes() {
+                    try {
+                        console.log("📡 [FETCH] Buscando vestes...");
+                        const resp = await fetchWithAuth(`${API_BASE}/veste/`);
+            
+                        if (!resp || !resp.ok) {
+                            throw new Error('Erro ao buscar vestes');
+                        }
+            
+                        const data = await resp.json();
+                        console.log("📄 [VESTES] Dados recebidos:", data);
+            
+                        // Adapta para diferentes formatos
+                        todasAsVestes = Array.isArray(data) ? data : (data.results || []);
+                        
+                        renderVestes(todasAsVestes);
+                    } catch (error) {
+                        console.error("❌ [ERROR] Erro ao buscar vestes:", error);
+                        const tableBody = document.querySelector('#vestes-table-body');
+                        if (tableBody) {
+                            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Falha ao carregar dados. Verifique a conexão.</td></tr>';
+                        }
+                    }
+                }
+            
+                // ============== FILTROS ==============
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Busca inicial
+                    fetchVestes();
+            
+                    // Botões de filtro
+                    const filterButtons = document.querySelectorAll('.btn-group .btn');
+                    filterButtons.forEach(button => {
+                        button.addEventListener('click', () => {
+                            filterButtons.forEach(btn => btn.classList.remove('active'));
+                            button.classList.add('active');
+            
+                            const filterType = button.dataset.filter;
+                            let vestesFiltradas = [];
+            
+                            if (filterType === 'todas') {
+                                vestesFiltradas = todasAsVestes;
+                            } else if (filterType === 'disponiveis') {
+                                // Disponíveis: ativas E sem profile
+                                vestesFiltradas = todasAsVestes.filter(v => 
+                                    v.status === 'ativa' && v.profile === null
+                                );
+                            } else if (filterType === 'em-uso') {
+                                // Em uso: ativas E com profile
+                                vestesFiltradas = todasAsVestes.filter(v => 
+                                    v.status === 'ativa' && v.profile !== null
+                                );
+                            } else if (filterType === 'indisponiveis') {
+                                // Indisponíveis: inativas (com ou sem profile)
+                                vestesFiltradas = todasAsVestes.filter(v => 
+                                    v.status === 'inativo'
+                                );
+                            }
+                            
+                            renderVestes(vestesFiltradas);
+                        });
+                    });
+            
+                    console.log("✅ [READY] Script de vestes pronto!");
+                });
         </script>
     </body>
 </html>
